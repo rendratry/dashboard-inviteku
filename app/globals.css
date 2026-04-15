@@ -1,26 +1,196 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   PASTEL DESIGN SYSTEM — Inviteku Admin Dashboard
+   Leveraging Tailwind CSS v4 @theme directive
+   ============================================================ */
+@theme {
+  /* ---- Google Font: Plus Jakarta Sans ---- */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Pastel Color Palette ---- */
+  --color-blush-50:  #fff5f7;
+  --color-blush-100: #ffe0e7;
+  --color-blush-200: #ffc2cf;
+  --color-blush-300: #ff9fb5;
+  --color-blush-400: #ff7a99;
+  --color-blush-500: #f95c7e;
+
+  --color-mint-50:   #f0fdf8;
+  --color-mint-100:  #ccfbee;
+  --color-mint-200:  #9af5db;
+  --color-mint-300:  #5de9c5;
+  --color-mint-400:  #2ed3aa;
+  --color-mint-500:  #14b894;
+
+  --color-lavender-50:  #f8f4ff;
+  --color-lavender-100: #ede4ff;
+  --color-lavender-200: #d9c8ff;
+  --color-lavender-300: #c2a7ff;
+  --color-lavender-400: #a780ff;
+  --color-lavender-500: #8b5cf6;
+
+  --color-baby-50:   #eff9ff;
+  --color-baby-100:  #d8f1ff;
+  --color-baby-200:  #b3e3ff;
+  --color-baby-300:  #80cfff;
+  --color-baby-400:  #4db8ff;
+  --color-baby-500:  #1a9fe0;
+
+  --color-peach-50:  #fff8f1;
+  --color-peach-100: #ffe9d0;
+  --color-peach-200: #ffd0a0;
+  --color-peach-300: #ffb06a;
+  --color-peach-400: #ff8c35;
+  --color-peach-500: #f06c0a;
+
+  /* ---- Neutral Pastels ---- */
+  --color-cream-50:  #fefdfb;
+  --color-cream-100: #faf7f2;
+  --color-cream-200: #f5f0e8;
+  --color-cream-300: #ede4d5;
+
+  --color-slate-soft: #64748b;
+  --color-ink:        #1e1b4b;
+  --color-ink-muted:  #4c4a6e;
+
+  /* ---- Semantic aliases ---- */
+  --color-background: var(--color-cream-100);
+  --color-surface:    #ffffff;
+  --color-primary:    var(--color-blush-400);
+  --color-primary-light: var(--color-blush-100);
+  --color-secondary:  var(--color-lavender-400);
+  --color-accent:     var(--color-mint-400);
+  --color-warning:    var(--color-peach-400);
+  --color-info:       var(--color-baby-400);
+
+  /* ---- Radii ---- */
+  --radius-card:   1.25rem;  /* 20px */
+  --radius-modal:  1.5rem;   /* 24px */
+  --radius-btn:    0.75rem;  /* 12px */
+  --radius-input:  0.625rem; /* 10px */
+  --radius-pill:   9999px;
+
+  /* ---- Shadows ---- */
+  --shadow-card:  0 2px 16px 0 rgba(159, 97, 140, 0.08), 0 1px 4px 0 rgba(0,0,0,0.04);
+  --shadow-float: 0 8px 40px 0 rgba(159, 97, 140, 0.14);
+  --shadow-input: 0 0 0 3px rgba(200, 162, 255, 0.3);
+
+  /* ---- Transitions ---- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ---- Base Styles ---- */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* ---- Scrollbar Styling ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-cream-200);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-blush-200);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-blush-300);
+}
+
+/* ---- Focus Ring ---- */
+:focus-visible {
+  outline: 2px solid var(--color-lavender-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---- Selection ---- */
+::selection {
+  background: var(--color-lavender-200);
+  color: var(--color-ink);
+}
+
+/* ---- Animated gradient background for login page ---- */
+.bg-pastel-gradient {
+  background: linear-gradient(
+    135deg,
+    #ffe0e7 0%,
+    #ede4ff 25%,
+    #d8f1ff 50%,
+    #ccfbee 75%,
+    #ffe9d0 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ---- Glass Card ---- */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+/* ---- Sidebar Active Link ---- */
+.sidebar-link-active {
+  background: linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%);
+  color: var(--color-ink) !important;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---- Table Hover ---- */
+.table-row-hover:hover {
+  background-color: var(--color-cream-200);
+  transition: background-color 0.15s ease;
+}
+
+/* ---- Input Focus ---- */
+.input-pastel:focus {
+  border-color: var(--color-lavender-300);
+  box-shadow: var(--shadow-input);
+  outline: none;
+}
+
+/* ---- Pill Badge ---- */
+.badge-active {
+  background: var(--color-mint-100);
+  color: var(--color-mint-500);
+}
+.badge-inactive {
+  background: var(--color-cream-200);
+  color: var(--color-slate-soft);
+}
+
+/* ---- Tab Active ---- */
+.tab-active {
+  background: linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%);
+  color: var(--color-ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
 }
