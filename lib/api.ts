@@ -121,7 +121,7 @@ export async function getTamuApi(token: string, idUndangan: number | string) {
 
 export async function addTamuApi(
   token: string,
-  payload: { id_undangan: number; nama: string; alamat: string; no_wa?: string },
+  payload: { id_undangan: number; key: string; nama: string; alamat: string; no_wa?: string },
 ) {
   return apiFetch<ApiResponse>("/add-tamu", {
     method: "POST",
@@ -143,10 +143,10 @@ export async function updateTamuApi(
 
 export async function deleteTamuApi(
   token: string,
-  id: number,
   idUndangan: number,
+  id: number,
 ) {
-  return apiFetch<ApiResponse>(`/delete-tamu/${id}/${idUndangan}`, {
+  return apiFetch<ApiResponse>(`/delete-tamu/${idUndangan}/${id}`, {
     method: "GET",
     headers: authHeaders(token),
   });

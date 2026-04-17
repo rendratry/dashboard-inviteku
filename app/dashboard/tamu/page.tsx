@@ -282,26 +282,104 @@ function ConfirmModal({ open, onClose, onConfirm, loading, nama }: { open: boole
   );
 }
 
+// ── Key Generation ─────────────────────────────────────────────────────────
+
+/** Slugify a name: lowercase, strip non-alphanumeric, replace spaces with dash */
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")      // strip diacritics
+    .replace(/[^a-z0-9\s-]/g, "")          // strip special chars
+    .trim()
+    .replace(/\s+/g, "-");                 // spaces → dashes
+}
+
+/**
+ * Generate a unique key from `name` that doesn't clash with `existingKeys`.
+ * If "budi-santoso" exists, tries "budi-santoso-2", "budi-santoso-3", …
+ */
+function generateUniqueKey(name: string, existingKeys: string[]): string {
+  const base = slugify(name);
+  if (!existingKeys.includes(base)) return base;
+  let counter = 2;
+  while (existingKeys.includes(`${base}-${counter}`)) counter++;
+  return `${base}-${counter}`;
+}
+
 // ── Guest Form ─────────────────────────────────────────────────────────────
 
-type GuestFormData = { nama: string; alamat: string; no_wa: string };
+type GuestFormData = { key: string; nama: string; alamat: string; no_wa: string };
 
-function GuestForm({ initial, onSubmit, loading }: {
+function GuestForm({ initial, onSubmit, loading, existingKeys = [] }: {
   initial?: Partial<Tamu>;
   onSubmit: (data: GuestFormData) => void;
   loading: boolean;
+  existingKeys?: string[];
 }) {
+  const isEdit = !!initial?.id;
   const [nama, setNama] = useState(initial?.nama ?? "");
+  const [key, setKey] = useState(initial?.key ?? "");
   const [alamat, setAlamat] = useState(initial?.alamat ?? "");
   const [noWa, setNoWa] = useState(initial?.no_wa ?? "");
+  const [keyManuallyEdited, setKeyManuallyEdited] = useState(isEdit);
+
+  // Auto-generate key from name when not manually edited (add mode only)
+  const handleNamaChange = (value: string) => {
+    setNama(value);
+    if (!keyManuallyEdited && !isEdit) {
+      // Exclude current key from conflict check while typing (will be resolved on submit)
+      setKey(slugify(value));
+    }
+  };
+
+  const handleKeyChange = (value: string) => {
+    setKey(slugify(value) || value.toLowerCase());
+    setKeyManuallyEdited(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Resolve conflict on submit for add mode
+    const finalKey = isEdit ? key : generateUniqueKey(nama, existingKeys.filter((k) => k !== initial?.key));
+    onSubmit({ key: finalKey, nama, alamat, no_wa: noWa });
+  };
+
+  // Warn if key already exists
+  const keyConflict = !isEdit && key && existingKeys.includes(key);
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ nama, alamat, no_wa: noWa }); }} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="guest-nama" className="block text-sm font-medium text-ink-muted mb-1.5">Nama Tamu</label>
-        <input id="guest-nama" type="text" required value={nama} onChange={(e) => setNama(e.target.value)}
+        <input id="guest-nama" type="text" required value={nama} onChange={(e) => handleNamaChange(e.target.value)}
           placeholder="e.g. Budi Santoso"
           className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+      </div>
+
+      {/* Key field */}
+      <div>
+        <label htmlFor="guest-key" className="block text-sm font-medium text-ink-muted mb-1.5">
+          Kode Tamu (Key)
+          {!isEdit && <span className="ml-2 text-xs text-slate-soft font-normal">· otomatis dari nama</span>}
+        </label>
+        <div className="relative">
+          <input id="guest-key" type="text" required value={key}
+            onChange={(e) => handleKeyChange(e.target.value)}
+            placeholder="budi-santoso"
+            className={`input-pastel w-full px-4 py-3 rounded-xl border text-ink text-sm font-mono ${
+              keyConflict
+                ? "border-amber-300 bg-amber-50"
+                : "border-cream-300 bg-cream-50"
+            }`} />
+        </div>
+        {keyConflict ? (
+          <p className="text-xs text-amber-500 mt-1">
+            Kode ini sudah ada — akan otomatis ditambah suffix saat disimpan (misal: <span className="font-mono">{key}-2</span>)
+          </p>
+        ) : (
+          <p className="text-xs text-slate-soft mt-1">Digunakan sebagai parameter link undangan tamu</p>
+        )}
       </div>
 
       <div>
@@ -333,7 +411,7 @@ function GuestForm({ initial, onSubmit, loading }: {
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 cursor-pointer"
           style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
           {loading && <Loader2 size={14} className="animate-spin" />}
-          {loading ? "Menyimpan…" : initial?.id ? "Update Tamu" : "Tambah Tamu"}
+          {loading ? "Menyimpan…" : isEdit ? "Update Tamu" : "Tambah Tamu"}
         </motion.button>
       </div>
     </form>
@@ -393,7 +471,13 @@ export default function TamuPage() {
     if (!token || !selectedUndangan) return;
     setActionLoading(true);
     try {
-      await addTamuApi(token, { id_undangan: selectedUndangan.id, ...data });
+      await addTamuApi(token, {
+        id_undangan: selectedUndangan.id,
+        key: data.key,
+        nama: data.nama,
+        alamat: data.alamat,
+        no_wa: data.no_wa,
+      });
       setAddOpen(false);
       fetchGuests();
     } catch { /* noop */ } finally { setActionLoading(false); }
@@ -413,7 +497,7 @@ export default function TamuPage() {
     if (!token || !deleteGuest || !selectedUndangan) return;
     setActionLoading(true);
     try {
-      await deleteTamuApi(token, deleteGuest.id, selectedUndangan.id);
+      await deleteTamuApi(token, selectedUndangan.id, deleteGuest.id);
       setDeleteGuest(null);
       fetchGuests();
     } catch { /* noop */ } finally { setActionLoading(false); }
@@ -552,7 +636,11 @@ export default function TamuPage() {
 
       {/* Add Modal */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Tambah Tamu Baru">
-        <GuestForm onSubmit={handleAdd} loading={actionLoading} />
+        <GuestForm
+          onSubmit={handleAdd}
+          loading={actionLoading}
+          existingKeys={guests.map((g) => g.key ?? "").filter(Boolean)}
+        />
       </Modal>
 
       {/* Edit Modal */}
