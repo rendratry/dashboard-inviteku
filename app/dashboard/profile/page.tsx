@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { User, CheckCircle2, AlertTriangle, Lock, Camera } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { updateUserApi, updateAvatarApi } from "@/lib/api";
@@ -78,7 +78,7 @@ export default function ProfilePage() {
     } finally { setAvatarLoading(false); }
   };
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.45, ease: "easeOut" } }),
   };

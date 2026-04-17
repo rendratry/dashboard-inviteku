@@ -34,9 +34,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     getUserApi(token)
       .then((res) => {
-        // Handle both { data: user } and direct user shape
-        const user = (res as { data?: typeof res }).data ?? res;
-        setUser(user as Parameters<typeof setUser>[0]);
+        // Safe access to .data if it exists, otherwise use res as the user object
+        const user = (res as any).data ?? res;
+        setUser(user);
       })
       .catch(() => {
         // Token is invalid — force logout
