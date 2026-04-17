@@ -17,7 +17,7 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=4118
+ENV PORT=4122
 ENV HOSTNAME=0.0.0.0
 
 USER node
@@ -26,6 +26,6 @@ COPY --chown=node:node --from=builder /app/.next/standalone ./
 COPY --chown=node:node --from=builder /app/.next/static ./.next/static
 COPY --chown=node:node --from=builder /app/public ./public
 
-EXPOSE 4118
+EXPOSE 4122
 
 CMD ["node", "server.js"]

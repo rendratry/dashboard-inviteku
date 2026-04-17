@@ -48,7 +48,7 @@ jobs:
             docker pull rendratry/dashboard-inviteku:latest
 
             docker run -d \
-              -p 4118:4118 \
+              -p 4122:4122 \
               --restart unless-stopped \
               --name dashboard-inviteku \
               rendratry/dashboard-inviteku:latest
