@@ -1,18 +1,15 @@
 "use client";
 
-/**
- * Topbar — displays page title, search hint, and user avatar dropdown.
- */
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Bell, User, Settings, LogOut, ChevronDown, Menu } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { UserAvatar } from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 
-// Title map for route → display name
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Overview",
+  "/dashboard/undangan": "Buat Undangan",
   "/dashboard/profile": "Profile & Settings",
   "/dashboard/tamu": "Tamu Management",
   "/dashboard/assets": "Undangan Assets",
@@ -28,14 +25,9 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
   const title = PAGE_TITLES[pathname] ?? "Dashboard";
 
-  const handleLogout = () => {
-    setDropdownOpen(false);
-    logout();
-    router.push("/login");
-  };
+  const handleLogout = () => { setDropdownOpen(false); logout(); router.push("/login"); };
 
   return (
     <header className="h-16 flex items-center px-6 gap-4 border-b border-cream-200 bg-white/80 backdrop-blur-md flex-shrink-0 sticky top-0 z-20">
@@ -46,11 +38,7 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
         className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-blush-50 text-slate-soft hover:text-blush-500 transition-colors"
         aria-label="Toggle sidebar"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" x2="21" y1="6" y2="6" />
-          <line x1="3" x2="21" y1="12" y2="12" />
-          <line x1="3" x2="21" y1="18" y2="18" />
-        </svg>
+        <Menu size={18} />
       </button>
 
       {/* Page title */}
@@ -64,22 +52,18 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
         {title}
       </motion.h2>
 
-      {/* Right cluster */}
       <div className="flex items-center gap-2">
-        {/* Notification bell (decorative) */}
+        {/* Notification bell */}
         <button
           id="notif-bell"
           className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-blush-50 text-slate-soft hover:text-blush-500 transition-colors"
           aria-label="Notifications"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-          </svg>
+          <Bell size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blush-400 border-2 border-white" />
         </button>
 
-        {/* User avatar + dropdown */}
+        {/* Avatar + dropdown */}
         <div className="relative">
           <button
             id="user-avatar-btn"
@@ -92,34 +76,23 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
                 <span className="text-sm font-medium text-ink hidden sm:block max-w-28 truncate">
                   {user.name}
                 </span>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`text-slate-soft transition-transform duration-200 hidden sm:block ${dropdownOpen ? "rotate-180" : ""}`}
+                <motion.div
+                  animate={{ rotate: dropdownOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="hidden sm:block text-slate-soft"
                 >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                  <ChevronDown size={12} strokeWidth={2.5} />
+                </motion.div>
               </>
             ) : (
               <div className="w-8 h-8 rounded-xl bg-cream-200 animate-pulse" />
             )}
           </button>
 
-          {/* Dropdown menu */}
           <AnimatePresence>
             {dropdownOpen && (
               <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setDropdownOpen(false)}
-                />
+                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
                 <motion.div
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -133,34 +106,14 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
                       <p className="text-xs text-slate-soft truncate">{user.email}</p>
                     </div>
                   )}
-
                   <div className="p-1.5 space-y-0.5">
-                    <DropdownItem
-                      id="dd-profile"
-                      icon="👤"
-                      label="My Profile"
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        router.push("/dashboard/profile");
-                      }}
-                    />
-                    <DropdownItem
-                      id="dd-settings"
-                      icon="⚙️"
-                      label="Settings"
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        router.push("/dashboard/profile");
-                      }}
-                    />
+                    <DropdownItem id="dd-profile" icon={<User size={14} />} label="My Profile"
+                      onClick={() => { setDropdownOpen(false); router.push("/dashboard/profile"); }} />
+                    <DropdownItem id="dd-settings" icon={<Settings size={14} />} label="Settings"
+                      onClick={() => { setDropdownOpen(false); router.push("/dashboard/profile"); }} />
                     <div className="h-px bg-cream-200 my-1" />
-                    <DropdownItem
-                      id="dd-logout"
-                      icon="🚪"
-                      label="Sign out"
-                      onClick={handleLogout}
-                      danger
-                    />
+                    <DropdownItem id="dd-logout" icon={<LogOut size={14} />} label="Sign out"
+                      onClick={handleLogout} danger />
                   </div>
                 </motion.div>
               </>
@@ -173,29 +126,17 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
 }
 
 function DropdownItem({
-  id,
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  id: string;
-  icon: string;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
+  id, icon, label, onClick, danger,
+}: { id: string; icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button
       id={id}
       onClick={onClick}
       className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-        danger
-          ? "text-red-500 hover:bg-red-50"
-          : "text-ink-muted hover:bg-cream-200 hover:text-ink"
+        danger ? "text-red-500 hover:bg-red-50" : "text-ink-muted hover:bg-cream-200 hover:text-ink"
       }`}
     >
-      <span>{icon}</span>
+      {icon}
       {label}
     </button>
   );

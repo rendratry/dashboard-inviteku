@@ -121,7 +121,7 @@ export async function getTamuApi(token: string, idUndangan: number | string) {
 
 export async function addTamuApi(
   token: string,
-  payload: { id_undangan: number; nama: string; alamat: string },
+  payload: { id_undangan: number; nama: string; alamat: string; no_wa?: string },
 ) {
   return apiFetch<ApiResponse>("/add-tamu", {
     method: "POST",
@@ -132,7 +132,7 @@ export async function addTamuApi(
 
 export async function updateTamuApi(
   token: string,
-  payload: { id: number; nama: string; alamat?: string },
+  payload: { id: number; nama: string; alamat?: string; no_wa?: string },
 ) {
   return apiFetch<ApiResponse>("/update-tamu", {
     method: "POST",
@@ -166,6 +166,14 @@ export async function getUndanganApi(token: string) {
   return apiFetch<{ data: Undangan[] }>("/get-undangan", {
     method: "GET",
     headers: authHeaders(token),
+  });
+}
+
+export async function createUndanganApi(token: string, title: string) {
+  return apiFetch<{ data: Undangan }>("/create-undangan", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ title }),
   });
 }
 
@@ -333,16 +341,21 @@ export interface User {
 
 export interface Undangan {
   id: number;
-  title: string;
-  key?: string;
+  nama: string;
+  key_undangan?: string;
+  template?: string;
+  exp?: string;
+  id_user?: string;
+  is_published?: boolean;
 }
 
 export interface Tamu {
   id: number;
   id_undangan: number;
+  key?: string;
   nama: string;
   alamat: string;
-  key?: string;
+  no_wa?: string;
 }
 
 export interface AssetOpening {
