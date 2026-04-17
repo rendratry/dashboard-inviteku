@@ -428,7 +428,7 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
   const update = <K extends keyof AssetGift>(field: K, value: AssetGift[K]) => setData((d) => d ? { ...d, [field]: value } : d);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetGiftApi(token, { id_undangan: idUndangan, ...data }); setAlert({ type: "success", message: "Gift saved!" }); }
+    try { await updateAssetGiftApi(token, { ...data, id_undangan: idUndangan }); setAlert({ type: "success", message: "Gift saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
