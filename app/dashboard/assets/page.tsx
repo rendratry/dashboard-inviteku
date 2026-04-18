@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Users, Gem, PartyPopper, Image, MapPin, Gift,
   Palette, Paperclip, CheckCircle2, AlertTriangle, Loader2,
-  ChevronDown,
+  ChevronDown, Music, X, Search, Library
 } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
 import {
   getAssetOpeningApi, updateAssetOpeningApi,
@@ -16,11 +17,10 @@ import {
   getAssetGalleryApi, updateAssetGalleryApi,
   getAssetMapsApi, updateAssetMapsApi,
   getAssetGiftApi, updateAssetGiftApi,
-  uploadAssetsApi,
-  getUndanganApi,
+  getUndanganApi, getLibraryAssetsApi,
   type AssetOpening, type AssetMempelai, type AssetAkad,
   type AssetResepsi, type AssetGallery, type AssetMaps, type AssetGift,
-  type Undangan,
+  type Undangan, type LibraryAsset
 } from "@/lib/api";
 
 // ── Undangan Dropdown ──────────────────────────────────────────────────────
@@ -145,46 +145,191 @@ function SectionSkeleton() {
   );
 }
 
-function ImageUploadField({ label, currentId, onUpload, token }: {
-  label: string; currentId?: number; onUpload: (id: number) => void; token: string;
-}) {
-  const [uploading, setUploading] = useState(false);
-  const [justUploaded, setJustUploaded] = useState(false);
+// ── Asset Picker Component ─────────────────────────────────────────────────
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+function AssetPicker({
+  label, currentId, onSelect, token, type = "image"
+}: {
+  label: string;
+  currentId?: number;
+  onSelect: (id: number) => void;
+  token: string;
+  type?: "image" | "audio";
+}) {
+  const [open, setOpen] = useState(false);
+  const [assets, setAssets] = useState<LibraryAsset[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const fetchAssets = async () => {
+    setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await uploadAssetsApi(token, fd);
-      onUpload(res.data.id);
-      setJustUploaded(true);
-      setTimeout(() => setJustUploaded(false), 3000);
-    } catch { /* noop */ } finally { setUploading(false); }
+      const res = await getLibraryAssetsApi(token);
+      const list = res && typeof res === "object" && "data" in res && Array.isArray(res.data) 
+        ? res.data 
+        : (Array.isArray(res) ? res : []) as LibraryAsset[];
+
+      const filtered = list.filter(a => {
+        const isImg = /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(a.link);
+        const isAud = /\.(mp3|wav|ogg)(\?|$)/i.test(a.link);
+        return type === "image" ? isImg : isAud;
+      });
+      setAssets(filtered);
+    } catch { /* noop */ } finally { setLoading(false); }
   };
+
+  useEffect(() => { if (open) fetchAssets(); }, [open]);
+
+  const selectedAsset = assets.find(a => a.id === currentId);
+  const filteredList = assets.filter(a => 
+    a.name.toLowerCase().includes(search.toLowerCase()) || 
+    a.key.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-1.5">
       <p className="text-sm font-medium text-ink-muted">{label}</p>
-      <div className="flex items-center gap-3">
-        <label className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-lavender-200 bg-lavender-50 cursor-pointer hover:bg-lavender-100 transition-colors">
-          <Paperclip size={16} className="text-lavender-400 flex-shrink-0" />
-          <span className="text-sm text-ink-muted">
-            {uploading ? "Uploading…" : "Klik untuk upload gambar"}
-          </span>
-          <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-        </label>
-        <AnimatePresence>
-          {(currentId || justUploaded) && (
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mint-100 rounded-lg text-xs font-semibold text-mint-500 flex-shrink-0">
-              <CheckCircle2 size={12} /> Tersimpan
-            </motion.div>
+      
+      <button 
+        type="button" 
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 hover:bg-white hover:border-lavender-200 transition-all cursor-pointer group"
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          {currentId ? (
+            <>
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-cream-200">
+                {type === "image" && selectedAsset ? (
+                  <img src={selectedAsset.link} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <div className="w-full h-full bg-mint-100 flex items-center justify-center text-mint-500">
+                    <CheckCircle2 size={18} />
+                  </div>
+                )}
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-ink font-semibold">Gambar terpilih</p>
+                <p className="text-[10px] text-slate-soft font-mono truncate">{selectedAsset?.name || ""}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-10 h-10 rounded-lg bg-lavender-100 flex items-center justify-center text-lavender-400 flex-shrink-0">
+                <Paperclip size={18} />
+              </div>
+              <span className="text-sm text-ink-muted italic">Pilih {type === "image" ? "Gambar" : "Audio"}...</span>
+            </>
           )}
+        </div>
+        <ChevronDown size={14} className="text-slate-soft" />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[100]" onClick={() => setOpen(false)} 
+            />
+            
+            {/* Modal */}
+            <div className="fixed inset-0 flex items-center justify-center z-[110] p-4 pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden pointer-events-auto flex flex-col"
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-cream-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-lavender-100 flex items-center justify-center text-lavender-500">
+                      {type === "image" ? <Image size={20} /> : <Music size={20} />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-ink">Select {type === "image" ? "Image" : "Audio"}</h3>
+                      <p className="text-xs text-slate-soft">Pilih dari Library Assets Anda</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-cream-100 text-slate-soft cursor-pointer">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Sub-header: Search */}
+                <div className="px-6 py-4 bg-cream-50/50 border-b border-cream-100">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-soft" size={16} />
+                    <input 
+                      type="text" placeholder="Search assets..." value={search} onChange={(e) => setSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-cream-200 rounded-xl text-sm focus:border-lavender-300 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Body: Grid */}
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                  {loading ? (
+                    <div className="py-20 flex flex-col items-center gap-3">
+                      <Loader2 className="animate-spin text-blush-400" size={32} />
+                      <p className="text-sm text-slate-soft">Loading library assets...</p>
+                    </div>
+                  ) : filteredList.length === 0 ? (
+                    <div className="py-20 text-center text-slate-soft italic text-sm">
+                      Tidak ada aset yang ditemukan.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {filteredList.map(a => (
+                        <button 
+                          key={a.id} type="button"
+                          onClick={() => { onSelect(a.id); setOpen(false); }}
+                          className={`flex flex-col rounded-2xl border transition-all cursor-pointer group overflow-hidden ${
+                            currentId === a.id ? "border-blush-400 ring-2 ring-blush-100 shadow-md" : "border-cream-200 hover:border-lavender-300 bg-cream-50/30"
+                          }`}
+                        >
+                          <div className="aspect-square bg-white relative">
+                            {type === "image" ? (
+                              <img src={a.link} alt={a.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-lavender-400 group-hover:scale-110 transition-transform"><Music size={32} /></div>
+                            )}
+                            {currentId === a.id && (
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-blush-400 text-white flex items-center justify-center shadow-lg">
+                                <CheckCircle2 size={14} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3 text-left">
+                            <p className="text-xs font-bold text-ink truncate line-clamp-1">{a.name}</p>
+                            <p className="text-[10px] font-mono text-slate-soft truncate mt-0.5">{a.key}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 bg-cream-50 border-t border-cream-100 flex justify-center">
+                  <Link href="/dashboard/library" 
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-lavender-600 hover:bg-lavender-100 transition-colors">
+                    <Library size={14} />
+                    Go to Library to upload more
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
         </AnimatePresence>
-      </div>
+
+      {currentId && selectedAsset && type === "image" && (
+        <div className="mt-2 w-full h-32 rounded-xl border border-cream-200 overflow-hidden bg-cream-50 flex items-center justify-center">
+          <img src={selectedAsset.link} className="h-full w-full object-cover opacity-80" alt="Preview" />
+        </div>
+      )}
     </div>
   );
 }
@@ -217,8 +362,8 @@ function OpeningTab({ token, idUndangan }: { token: string; idUndangan: number }
         <input id="opening-nama" type="text" className={inputClass} value={data?.nama_mempelai ?? ""} placeholder="Romeo & Juliet"
           onChange={(e) => setData((d) => d ? { ...d, nama_mempelai: e.target.value } : d)} />
       </FormField>
-      <ImageUploadField label="Foto Cover" currentId={data?.foto_cover} token={token}
-        onUpload={(id) => setData((d) => d ? { ...d, foto_cover: id } : d)} />
+      <AssetPicker label="Foto Cover" currentId={data?.foto_cover} token={token} type="image"
+        onSelect={(id) => setData((d) => d ? { ...d, foto_cover: id } : d)} />
       <SaveButton loading={saving} />
     </form>
   );
@@ -254,8 +399,8 @@ function MempelaiTab({ token, idUndangan }: { token: string; idUndangan: number 
         <FormField label="Keluarga Mempelai Wanita" id="wanita-keluarga"><input id="wanita-keluarga" type="text" className={inputClass} placeholder="Bapak & Ibu Capulet" value={data?.keluarga_mempelai_wanita ?? ""} onChange={(e) => update("keluarga_mempelai_wanita", e.target.value)} /></FormField>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <ImageUploadField label="Foto Mempelai Pria" currentId={data?.foto_mempelai_pria} token={token} onUpload={(id) => update("foto_mempelai_pria", id)} />
-        <ImageUploadField label="Foto Mempelai Wanita" currentId={data?.foto_mempelai_wanita} token={token} onUpload={(id) => update("foto_mempelai_wanita", id)} />
+        <AssetPicker label="Foto Mempelai Pria" currentId={data?.foto_mempelai_pria} token={token} type="image" onSelect={(id) => update("foto_mempelai_pria", id)} />
+        <AssetPicker label="Foto Mempelai Wanita" currentId={data?.foto_mempelai_wanita} token={token} type="image" onSelect={(id) => update("foto_mempelai_wanita", id)} />
       </div>
       <SaveButton loading={saving} />
     </form>
@@ -294,7 +439,7 @@ function AkadTab({ token, idUndangan }: { token: string; idUndangan: number }) {
       </div>
       <FormField label="Keterangan" id="akad-ket"><input id="akad-ket" type="text" className={inputClass} placeholder="Pukul 08:00 - 10:00 WIB" value={data?.keterangan ?? ""} onChange={(e) => update("keterangan", e.target.value)} /></FormField>
       <FormField label="Alamat" id="akad-alamat"><textarea id="akad-alamat" rows={2} className={`${inputClass} resize-none`} placeholder="Masjid…" value={data?.alamat ?? ""} onChange={(e) => update("alamat", e.target.value)} /></FormField>
-      <ImageUploadField label="Foto Akad" currentId={data?.foto_akad} token={token} onUpload={(id) => update("foto_akad", id)} />
+      <AssetPicker label="Foto Akad" currentId={data?.foto_akad} token={token} type="image" onSelect={(id) => update("foto_akad", id)} />
       <SaveButton loading={saving} />
     </form>
   );
@@ -332,7 +477,7 @@ function ResepsiTab({ token, idUndangan }: { token: string; idUndangan: number }
       </div>
       <FormField label="Keterangan" id="resepsi-ket"><input id="resepsi-ket" type="text" className={inputClass} placeholder="Pukul 11:00 - Selesai" value={data?.keterangan ?? ""} onChange={(e) => update("keterangan", e.target.value)} /></FormField>
       <FormField label="Alamat" id="resepsi-alamat"><textarea id="resepsi-alamat" rows={2} className={`${inputClass} resize-none`} placeholder="Gedung…" value={data?.alamat ?? ""} onChange={(e) => update("alamat", e.target.value)} /></FormField>
-      <ImageUploadField label="Foto Resepsi" currentId={data?.foto_resepsi} token={token} onUpload={(id) => update("foto_resepsi", id)} />
+      <AssetPicker label="Foto Resepsi" currentId={data?.foto_resepsi} token={token} type="image" onSelect={(id) => update("foto_resepsi", id)} />
       <SaveButton loading={saving} />
     </form>
   );
@@ -364,8 +509,8 @@ function GalleryTab({ token, idUndangan }: { token: string; idUndangan: number }
       <AlertBanner {...alert} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {fotoKeys.map((key, i) => (
-          <ImageUploadField key={key} label={`Photo ${i + 1}`} currentId={data?.[key] as number | undefined}
-            token={token} onUpload={(id) => update(key, id)} />
+          <AssetPicker key={key} label={`Photo ${i + 1}`} currentId={data?.[key] as number | undefined}
+            token={token} type="image" onSelect={(id) => update(key, id)} />
         ))}
       </div>
       <SaveButton loading={saving} />

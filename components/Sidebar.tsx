@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Mail, User, Users, PenSquare, MessageCircle,
-  ChevronLeft, LogOut,
+  ChevronLeft, LogOut, Library,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/dashboard/profile", label: "Profile", icon: <User size={18} /> },
   { href: "/dashboard/tamu", label: "Tamu (Guests)", icon: <Users size={18} /> },
   { href: "/dashboard/assets", label: "Undangan Assets", icon: <PenSquare size={18} /> },
+  { href: "/dashboard/library", label: "Assets Library", icon: <Library size={18} /> },
   { href: "/dashboard/komentar", label: "Komentar", icon: <MessageCircle size={18} /> },
 ];
 

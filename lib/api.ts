@@ -152,10 +152,18 @@ export async function deleteTamuApi(
   });
 }
 
-// ── Assets ─────────────────────────────────────────────────────────────────
+// ── Assets Library ─────────────────────────────────────────────────────────
+
+export async function getLibraryAssetsApi(token: string) {
+  return apiFetch<{ data: LibraryAsset[] }>("/assets", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
 
 export async function uploadAssetsApi(token: string, formData: FormData) {
-  return apiFetch<{ data: { id: number; url: string } }>("/upload-assets", {
+  // Matches backend expectations: file, key, name, id_user
+  return apiFetch<{ data: LibraryAsset }>("/upload-assets", {
     method: "POST",
     headers: authMultipartHeaders(token),
     body: formData,
@@ -347,6 +355,14 @@ export interface Undangan {
   exp?: string;
   id_user?: string;
   is_published?: boolean;
+}
+
+export interface LibraryAsset {
+  id: number;
+  key: string;
+  name: string;
+  id_user: string;
+  link: string;
 }
 
 export interface Tamu {
