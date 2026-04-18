@@ -8,7 +8,7 @@ import {
   Search, Filter, FileText, MoreVertical, Paperclip
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
-import { getLibraryAssetsApi, uploadAssetsApi, type LibraryAsset } from "@/lib/api";
+import { getLibraryAssetsApi, uploadAssetsApi, deleteAssetApi, type LibraryAsset } from "@/lib/api";
 
 type AssetType = "image" | "audio";
 
@@ -24,7 +24,13 @@ function slugify(name: string) {
 
 // ── Asset Card ─────────────────────────────────────────────────────────────
 
-function AssetCard({ asset, onCopyId }: { asset: LibraryAsset; onCopyId: (id: number) => void }) {
+function AssetCard({ 
+  asset, onCopyId, onDelete 
+}: { 
+  asset: LibraryAsset; 
+  onCopyId: (id: number) => void;
+  onDelete: (id: number) => void;
+}) {
   const isImage = /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(asset.link);
   const [copied, setCopied] = useState(false);
 
@@ -66,6 +72,13 @@ function AssetCard({ asset, onCopyId }: { asset: LibraryAsset; onCopyId: (id: nu
             title="Copy ID"
           >
             {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+          </button>
+          <button 
+            onClick={() => onDelete(asset.id)}
+            className="w-10 h-10 rounded-xl bg-white text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors shadow-lg cursor-pointer"
+            title="Delete Asset"
+          >
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
@@ -271,6 +284,19 @@ export default function LibraryPage() {
 
   useEffect(() => { fetchAssets(); }, [token]);
 
+  const handleDeleteAsset = async (id: number) => {
+    if (!token) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus asset ini? Tindakan ini tidak dapat dibatalkan.")) return;
+
+    try {
+      await deleteAssetApi(token, id);
+      showToast("Asset berhasil dihapus!");
+      setAssets(prev => prev.filter(a => a.id !== id));
+    } catch (err: any) {
+      showToast(err?.message ?? "Gagal menghapus asset.");
+    }
+  };
+
   const filteredAssets = assets.filter(a => {
     const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.key.toLowerCase().includes(search.toLowerCase());
     const isImage = /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(a.link);
@@ -374,7 +400,7 @@ export default function LibraryPage() {
                   <div className="flex-1 h-[1px] bg-cream-100 ml-2" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {images.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} />)}
+                  {images.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} onDelete={handleDeleteAsset} />)}
                 </div>
               </div>
             )}
@@ -388,7 +414,7 @@ export default function LibraryPage() {
                   <div className="flex-1 h-[1px] bg-cream-100 ml-2" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {audios.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} />)}
+                  {audios.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} onDelete={handleDeleteAsset} />)}
                 </div>
               </div>
             )}

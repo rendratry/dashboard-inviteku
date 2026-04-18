@@ -17,9 +17,11 @@ import {
   getAssetGalleryApi, updateAssetGalleryApi,
   getAssetMapsApi, updateAssetMapsApi,
   getAssetGiftApi, updateAssetGiftApi,
+  getAssetBacksoundApi, updateAssetBacksoundApi,
   getUndanganApi, getLibraryAssetsApi,
   type AssetOpening, type AssetMempelai, type AssetAkad,
   type AssetResepsi, type AssetGallery, type AssetMaps, type AssetGift,
+  type AssetBacksound,
   type Undangan, type LibraryAsset
 } from "@/lib/api";
 
@@ -94,6 +96,7 @@ const TABS = [
   { id: "gallery",  label: "Gallery",  icon: <Image size={15} /> },
   { id: "maps",     label: "Maps",     icon: <MapPin size={15} /> },
   { id: "gift",     label: "Gift",     icon: <Gift size={15} /> },
+  { id: "backsound", label: "Backsound", icon: <Music size={15} /> },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -349,10 +352,14 @@ function OpeningTab({ token, idUndangan }: { token: string; idUndangan: number }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetOpeningApi(token, data); setAlert({ type: "success", message: "Opening saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetOpeningApi(token, payload); setAlert({ type: "success", message: "Opening saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
+
+  const update = <K extends keyof AssetOpening>(field: K, value: AssetOpening[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetOpening));
 
   if (loading) return <SectionSkeleton />;
   return (
@@ -360,10 +367,10 @@ function OpeningTab({ token, idUndangan }: { token: string; idUndangan: number }
       <AlertBanner {...alert} />
       <FormField label="Nama Mempelai (Cover)" id="opening-nama">
         <input id="opening-nama" type="text" className={inputClass} value={data?.nama_mempelai ?? ""} placeholder="Romeo & Juliet"
-          onChange={(e) => setData((d) => d ? { ...d, nama_mempelai: e.target.value } : d)} />
+          onChange={(e) => update("nama_mempelai", e.target.value)} />
       </FormField>
       <AssetPicker label="Foto Cover" currentId={data?.foto_cover} token={token} type="image"
-        onSelect={(id) => setData((d) => d ? { ...d, foto_cover: id } : d)} />
+        onSelect={(id) => update("foto_cover", id)} />
       <SaveButton loading={saving} />
     </form>
   );
@@ -380,10 +387,12 @@ function MempelaiTab({ token, idUndangan }: { token: string; idUndangan: number 
     getAssetMempelaiApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetMempelai>(field: K, value: AssetMempelai[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetMempelai>(field: K, value: AssetMempelai[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetMempelai));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetMempelaiApi(token, data); setAlert({ type: "success", message: "Mempelai saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetMempelaiApi(token, payload); setAlert({ type: "success", message: "Mempelai saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -418,10 +427,12 @@ function AkadTab({ token, idUndangan }: { token: string; idUndangan: number }) {
     getAssetAkadApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetAkad>(field: K, value: AssetAkad[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetAkad>(field: K, value: AssetAkad[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetAkad));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetAkadApi(token, data); setAlert({ type: "success", message: "Akad saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetAkadApi(token, payload); setAlert({ type: "success", message: "Akad saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -456,10 +467,12 @@ function ResepsiTab({ token, idUndangan }: { token: string; idUndangan: number }
     getAssetResepsiApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetResepsi>(field: K, value: AssetResepsi[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetResepsi>(field: K, value: AssetResepsi[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetResepsi));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetResepsiApi(token, data); setAlert({ type: "success", message: "Resepsi saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetResepsiApi(token, payload); setAlert({ type: "success", message: "Resepsi saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -494,10 +507,25 @@ function GalleryTab({ token, idUndangan }: { token: string; idUndangan: number }
     getAssetGalleryApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetGallery>(field: K, value: AssetGallery[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetGallery>(field: K, value: AssetGallery[K]) => 
+    setData((d) => ({ 
+      ...(d || { id: 0, id_undangan: idUndangan, foto1: 0, foto2: 0, foto3: 0, foto4: 0, foto5: 0, foto6: 0 }), 
+      [field]: value 
+    } as AssetGallery));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetGalleryApi(token, data); setAlert({ type: "success", message: "Gallery saved!" }); }
+    const payload = {
+      ...data,
+      id: data.id ?? 0,
+      id_undangan: idUndangan,
+      foto1: data.foto1 ?? 0,
+      foto2: data.foto2 ?? 0,
+      foto3: data.foto3 ?? 0,
+      foto4: data.foto4 ?? 0,
+      foto5: data.foto5 ?? 0,
+      foto6: data.foto6 ?? 0,
+    };
+    try { await updateAssetGalleryApi(token, payload); setAlert({ type: "success", message: "Gallery saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -529,10 +557,12 @@ function MapsTab({ token, idUndangan }: { token: string; idUndangan: number }) {
     getAssetMapsApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetMaps>(field: K, value: AssetMaps[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetMaps>(field: K, value: AssetMaps[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetMaps));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetMapsApi(token, data); setAlert({ type: "success", message: "Maps saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetMapsApi(token, payload); setAlert({ type: "success", message: "Maps saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -570,10 +600,12 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
     getAssetGiftApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetGift>(field: K, value: AssetGift[K]) => setData((d) => d ? { ...d, [field]: value } : d);
+  const update = <K extends keyof AssetGift>(field: K, value: AssetGift[K]) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetGift));
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!data) return; setSaving(true);
-    try { await updateAssetGiftApi(token, { ...data, id_undangan: idUndangan }); setAlert({ type: "success", message: "Gift saved!" }); }
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { await updateAssetGiftApi(token, payload); setAlert({ type: "success", message: "Gift saved!" }); }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
@@ -590,6 +622,41 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
     </form>
   );
 }
+function BacksoundTab({ token, idUndangan }: { token: string; idUndangan: number }) {
+  const [data, setData] = useState<AssetBacksound | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [alert, setAlert] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
+
+  useEffect(() => {
+    setLoading(true); setData(null);
+    getAssetBacksoundApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
+  }, [token, idUndangan]);
+
+  const update = (value: number) => 
+    setData((d) => ({ ...(d || { id_undangan: idUndangan }), backsound: value } as AssetBacksound));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!data) return; setSaving(true);
+    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
+    try { 
+      await updateAssetBacksoundApi(token, payload); 
+      setAlert({ type: "success", message: "Background Music saved!" }); 
+    }
+    catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <SectionSkeleton />;
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <AlertBanner {...alert} />
+      <AssetPicker label="Pilih Background Music" currentId={data?.backsound} token={token} type="audio"
+        onSelect={(id) => update(id)} />
+      <SaveButton loading={saving} />
+    </form>
+  );
+}
 
 // ── Tab Router ─────────────────────────────────────────────────────────────
 
@@ -602,6 +669,7 @@ function TabContent({ id, token, idUndangan }: { id: TabId; token: string; idUnd
     case "gallery":  return <GalleryTab  token={token} idUndangan={idUndangan} />;
     case "maps":     return <MapsTab     token={token} idUndangan={idUndangan} />;
     case "gift":     return <GiftTab     token={token} idUndangan={idUndangan} />;
+    case "backsound": return <BacksoundTab token={token} idUndangan={idUndangan} />;
   }
 }
 

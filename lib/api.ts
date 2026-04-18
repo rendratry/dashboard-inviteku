@@ -311,6 +311,31 @@ export async function updateAssetGiftApi(
   });
 }
 
+export async function deleteAssetApi(token: string, id: number) {
+  return apiFetch<ApiResponse>(`/delete-asset/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export async function getAssetBacksoundApi(token: string, id: number | string) {
+  return apiFetch<{ data: AssetBacksound }>(`/asset-backsound/${id}`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export async function updateAssetBacksoundApi(
+  token: string,
+  payload: { id?: number; id_undangan: number; backsound: number },
+) {
+  return apiFetch<ApiResponse>("/update-asset-backsound", {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
 // ── Komentar ───────────────────────────────────────────────────────────────
 
 export async function getKomentarApi(token: string, id: number | string) {
@@ -444,6 +469,12 @@ export interface AssetGift {
   bank?: string;
   no_rek?: string;
   nama_rek?: string;
+}
+
+export interface AssetBacksound {
+  id: number;
+  id_undangan: number;
+  backsound: number;
 }
 
 export interface Komentar {
