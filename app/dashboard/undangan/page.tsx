@@ -63,14 +63,13 @@ function UndanganCard({ undangan, index }: { undangan: Undangan; index: number }
 
         {/* Status */}
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            undangan.is_published ? "badge-active" : "badge-inactive"
-          }`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${undangan.is_published ? "badge-active" : "badge-inactive"
+            }`}>
             {undangan.is_published ? "Published" : "Draft"}
           </span>
           {undangan.key_undangan && (
             <a
-              href={`https://inviteku.id/${undangan.key_undangan}`}
+              href={`https://inviteku.com/${undangan.key_undangan}`}
               target="_blank"
               rel="noreferrer"
               className="text-xs text-lavender-500 hover:underline flex items-center gap-1"
@@ -165,9 +164,8 @@ export default function UndanganPage() {
           <AnimatePresence>
             {createAlert.type && (
               <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
-                  createAlert.type === "success" ? "bg-mint-100 text-mint-500 border border-mint-200" : "bg-red-50 text-red-500 border border-red-100"
-                }`}>
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${createAlert.type === "success" ? "bg-mint-100 text-mint-500 border border-mint-200" : "bg-red-50 text-red-500 border border-red-100"
+                  }`}>
                 {createAlert.type === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
                 {createAlert.message}
               </motion.div>
