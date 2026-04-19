@@ -25,21 +25,12 @@ function slugify(name: string) {
 // ── Asset Card ─────────────────────────────────────────────────────────────
 
 function AssetCard({ 
-  asset, onCopyId, onDelete 
+  asset, onDelete 
 }: { 
   asset: LibraryAsset; 
-  onCopyId: (id: number) => void;
   onDelete: (id: number) => void;
 }) {
   const isImage = /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(asset.link);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(asset.id.toString());
-    setCopied(true);
-    onCopyId(asset.id);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <motion.div
@@ -66,13 +57,7 @@ function AssetCard({
           >
             <ExternalLink size={18} />
           </button>
-          <button 
-            onClick={handleCopy}
-            className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center transition-colors shadow-lg cursor-pointer ${copied ? "text-mint-500" : "text-ink hover:bg-lavender-50"}`}
-            title="Copy ID"
-          >
-            {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
-          </button>
+
           <button 
             onClick={() => onDelete(asset.id)}
             className="w-10 h-10 rounded-xl bg-white text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors shadow-lg cursor-pointer"
@@ -400,7 +385,7 @@ export default function LibraryPage() {
                   <div className="flex-1 h-[1px] bg-cream-100 ml-2" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {images.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} onDelete={handleDeleteAsset} />)}
+                  {images.map(a => <AssetCard key={a.id} asset={a} onDelete={handleDeleteAsset} />)}
                 </div>
               </div>
             )}
@@ -414,7 +399,7 @@ export default function LibraryPage() {
                   <div className="flex-1 h-[1px] bg-cream-100 ml-2" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {audios.map(a => <AssetCard key={a.id} asset={a} onCopyId={() => showToast("Asset ID copied to clipboard!")} onDelete={handleDeleteAsset} />)}
+                  {audios.map(a => <AssetCard key={a.id} asset={a} onDelete={handleDeleteAsset} />)}
                 </div>
               </div>
             )}

@@ -211,7 +211,7 @@ function AssetPicker({
                 )}
               </div>
               <div className="text-left">
-                <p className="text-sm text-ink font-semibold">Gambar terpilih</p>
+                <p className="text-sm text-ink font-semibold">{type === "image" ? "Gambar Terpilih" : "Musik Terpilih"}</p>
                 <p className="text-[10px] text-slate-soft font-mono truncate">{selectedAsset?.name || ""}</p>
               </div>
             </>

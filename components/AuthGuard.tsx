@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Mail } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { getUserApi } from "@/lib/api";
 
@@ -51,7 +52,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl animate-bounce"
             style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
-            💌
+            <Mail size={26} className="text-white" strokeWidth={1.5} />
           </div>
           <p className="text-sm text-slate-soft">Loading Inviteku…</p>
         </div>
