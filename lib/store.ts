@@ -47,3 +47,37 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+// ── Admin Auth Store ───────────────────────────────────────────────────────
+
+interface AdminAuthState {
+  adminToken: string | null;
+  isAdminAuthenticated: boolean;
+
+  // Actions
+  setAdminToken: (token: string) => void;
+  adminLogout: () => void;
+}
+
+export const useAdminStore = create<AdminAuthState>()(
+  persist(
+    (set) => ({
+      adminToken: null,
+      isAdminAuthenticated: false,
+
+      setAdminToken: (token) =>
+        set({ adminToken: token, isAdminAuthenticated: true }),
+
+      adminLogout: () =>
+        set({ adminToken: null, isAdminAuthenticated: false }),
+    }),
+    {
+      name: "inviteku-admin-auth",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        adminToken: state.adminToken,
+        isAdminAuthenticated: state.isAdminAuthenticated,
+      }),
+    },
+  ),
+);

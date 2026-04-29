@@ -58,12 +58,28 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    let errorMessage = `HTTP ${res.status}`;
+    let errorMessage = "Terjadi kesalahan, mohon coba lagi.";
+    switch (res.status) {
+      case 400: errorMessage = "Data yang dikirim tidak valid. Mohon periksa kembali."; break;
+      case 401: errorMessage = "Sesi Anda tidak valid atau telah berakhir. Silakan login kembali."; break;
+      case 403: errorMessage = "Anda tidak memiliki izin untuk tindakan ini."; break;
+      case 404: errorMessage = "Data yang diminta tidak ditemukan."; break;
+      case 413: errorMessage = "Ukuran file terlalu besar. Mohon upload file dengan ukuran lebih kecil."; break;
+      case 500: case 502: case 503: case 504:
+        errorMessage = "Terjadi gangguan pada server. Mohon coba beberapa saat lagi."; break;
+    }
+
     try {
       const body = await res.json();
-      errorMessage = body.message ?? errorMessage;
+      if (body.message && typeof body.message === "string" && body.message.trim() !== "") {
+        const msg = body.message.toLowerCase();
+        // Ignore raw/generic technical errors from the backend and stick to our friendly ones
+        if (!msg.includes("http 4") && !msg.includes("http 5") && !msg.includes("sqlstate")) {
+          errorMessage = body.message;
+        }
+      }
     } catch {
-      // swallow JSON parse errors
+      // swallow JSON parse errors and use fallback
     }
     throw { message: errorMessage, status: res.status } as ApiError;
   }
@@ -177,11 +193,14 @@ export async function getUndanganApi(token: string) {
   });
 }
 
-export async function createUndanganApi(token: string, title: string) {
+export async function createUndanganApi(
+  token: string,
+  payload: { nama: string; template: string },
+) {
   return apiFetch<{ data: Undangan }>("/create-undangan", {
     method: "POST",
     headers: authHeaders(token),
-    body: JSON.stringify({ title }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -318,6 +337,120 @@ export async function deleteAssetApi(token: string, id: number) {
   });
 }
 
+// ── Template Prices (Public) ────────────────────────────────────────────────
+
+export async function getTemplatePricesApi() {
+  return apiFetch<{ data: TemplatePrice[] }>("/template-prices", {
+    method: "GET",
+    headers: { "x-api-key": API_KEY },
+  });
+}
+
+// ── Undangan Update (Draft only) ───────────────────────────────────────────
+
+export async function updateUndanganApi(
+  token: string,
+  payload: { id_undangan: number; nama: string; template: string },
+) {
+  return apiFetch<ApiResponse>("/update-undangan", {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+// ── Request Publish (multipart) ────────────────────────────────────────────
+
+export async function requestPublishApi(token: string, formData: FormData) {
+  return apiFetch<ApiResponse>("/request-publish", {
+    method: "POST",
+    headers: authMultipartHeaders(token),
+    body: formData,
+  });
+}
+
+// ── Payment Status ─────────────────────────────────────────────────────────
+
+export async function getPaymentStatusApi(
+  token: string,
+  idUndangan: number | string,
+) {
+  return apiFetch<{ data: PaymentStatus }>(`/payment-status/${idUndangan}`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+// ── Admin ──────────────────────────────────────────────────────────────────
+
+function adminHeaders(adminToken: string): HeadersInit {
+  return {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+    Authorization: adminToken,
+  };
+}
+
+export async function adminLoginApi(username: string, password: string) {
+  return apiFetch<{ data: { token: string } }>("/admin/login", {
+    method: "POST",
+    headers: publicHeaders(),
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function adminGetPendingPaymentsApi(adminToken: string) {
+  return apiFetch<{ data: AdminPayment[] }>("/admin/pending-payments", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminGetAllPaymentsApi(adminToken: string) {
+  return apiFetch<{ data: AdminPayment[] }>("/admin/all-payments", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminVerifyPaymentApi(
+  adminToken: string,
+  payload: { order_id: number; approved: boolean; note: string },
+) {
+  return apiFetch<ApiResponse>("/admin/verify-payment", {
+    method: "POST",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminUpdateUndanganApi(
+  adminToken: string,
+  payload: { id_undangan: number; nama: string; template: string; note: string },
+) {
+  return apiFetch<ApiResponse>("/admin/update-undangan", {
+    method: "PUT",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminCreateTemplateApi(adminToken: string, formData: FormData) {
+  return apiFetch<ApiResponse>("/template-assets", {
+    method: "POST",
+    headers: authMultipartHeaders(adminToken),
+    body: formData,
+  });
+}
+
+export async function adminUpdateTemplateApi(adminToken: string, formData: FormData) {
+  return apiFetch<ApiResponse>("/template-assets", {
+    method: "PUT",
+    headers: authMultipartHeaders(adminToken),
+    body: formData,
+  });
+}
+
 export async function getAssetBacksoundApi(token: string, id: number | string) {
   return apiFetch<{ data: AssetBacksound }>(`/asset-backsound/${id}`, {
     method: "GET",
@@ -380,6 +513,48 @@ export interface Undangan {
   exp?: string;
   id_user?: string;
   is_published?: boolean;
+}
+
+export interface TemplatePrice {
+  id: number;
+  template: string;
+  name_template: string;
+  effective_price: number;
+  accent_color?: string;
+  thumbnail?: string;
+  background?: string;
+  top_right?: string;
+  top_left?: string;
+  bottom_right?: string;
+  bottom_left?: string;
+  description?: string;
+  features?: string[];
+}
+
+export type PaymentStatusValue = "draft" | "pending" | "approved" | "rejected";
+
+export interface PaymentStatus {
+  id: number;
+  id_undangan: number;
+  status: PaymentStatusValue;
+  bukti_transfer?: string;
+  note?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AdminPayment {
+  id: number;
+  id_undangan: number;
+  nama_undangan?: string;
+  user_name?: string;
+  user_email?: string;
+  template?: string;
+  status: PaymentStatusValue;
+  bukti_transfer?: string;
+  note?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LibraryAsset {
