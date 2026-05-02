@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Users, Gem, PartyPopper, Image, MapPin, Gift,
   Palette, Paperclip, CheckCircle2, AlertTriangle, Loader2,
-  ChevronDown, Music, X, Search, Library
+  ChevronDown, Music, X, Search, Library, Plus, Trash2, CreditCard
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
@@ -590,34 +590,134 @@ function MapsTab({ token, idUndangan }: { token: string; idUndangan: number }) {
 }
 
 function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
-  const [data, setData] = useState<AssetGift | null>(null);
+  const [data, setData] = useState<AssetGift[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
 
   useEffect(() => {
-    setLoading(true); setData(null);
-    getAssetGiftApi(token, idUndangan).then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false));
+    setLoading(true); setData([]);
+    getAssetGiftApi(token, idUndangan)
+      .then((r) => {
+        const arr = Array.isArray(r.data) ? r.data : [];
+        setData(arr);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const update = <K extends keyof AssetGift>(field: K, value: AssetGift[K]) => 
-    setData((d) => ({ ...(d || { id_undangan: idUndangan }), [field]: value } as AssetGift));
+  const updateGift = (index: number, field: keyof AssetGift, value: string) => {
+    const newData = [...data];
+    newData[index] = { ...newData[index], [field]: value };
+    setData(newData);
+  };
+
+  const removeGift = (index: number) => {
+    setData((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addGift = () => {
+    setData((prev) => [
+      ...prev,
+      { id: 0, id_undangan: idUndangan, bank_name: "", account_number: "", account_name: "" }
+    ]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!data) return; setSaving(true);
-    const payload = { ...data, id: data.id ?? 0, id_undangan: idUndangan };
-    try { await updateAssetGiftApi(token, payload); setAlert({ type: "success", message: "Gift saved!" }); }
+    e.preventDefault(); setSaving(true); setAlert({ type: null, message: "" });
+    const payload = { 
+      id_undangan: idUndangan, 
+      gifts: data.map(d => ({
+        bank_name: d.bank_name,
+        account_number: d.account_number,
+        account_name: d.account_name,
+      })) 
+    };
+    try { 
+      await updateAssetGiftApi(token, payload); 
+      setAlert({ type: "success", message: "Gifts saved successfully!" }); 
+    }
     catch (err: unknown) { const e = err as { message?: string }; setAlert({ type: "error", message: e?.message ?? "Failed." }); }
     finally { setSaving(false); }
   };
 
+  // Helper to generate a dummy color based on bank name
+  const getDummyColor = (name: string) => {
+    const colors = ["#ff9fb5", "#c2a7ff", "#9af5db", "#b3e3ff", "#ffc2cf"];
+    if (!name) return "#e2e8f0"; // default gray
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   if (loading) return <SectionSkeleton />;
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <AlertBanner {...alert} />
-      <FormField label="GoPay / Dana Number" id="gift-gopay"><input id="gift-gopay" type="text" className={inputClass} placeholder="0812345678" value={data?.gopay ?? ""} onChange={(e) => update("gopay", e.target.value)} /></FormField>
-      <FormField label="Bank Name" id="gift-bank"><input id="gift-bank" type="text" className={inputClass} placeholder="BCA / Mandiri…" value={data?.bank ?? ""} onChange={(e) => update("bank", e.target.value)} /></FormField>
-      <FormField label="Account Number" id="gift-no-rek"><input id="gift-no-rek" type="text" className={inputClass} placeholder="1234567890" value={data?.no_rek ?? ""} onChange={(e) => update("no_rek", e.target.value)} /></FormField>
-      <FormField label="Account Name" id="gift-nama-rek"><input id="gift-nama-rek" type="text" className={inputClass} placeholder="Romeo Montague" value={data?.nama_rek ?? ""} onChange={(e) => update("nama_rek", e.target.value)} /></FormField>
+      
+      <div className="space-y-4">
+        <AnimatePresence>
+          {data.map((gift, index) => (
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="p-5 rounded-2xl border border-cream-200 bg-cream-50/50 relative group"
+            >
+              <button 
+                type="button" 
+                onClick={() => removeGift(index)}
+                className="absolute top-4 right-4 p-2 text-slate-soft hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Remove Gift"
+              >
+                <Trash2 size={16} />
+              </button>
+              
+              <div className="flex items-center gap-4 mb-5">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
+                  style={{ backgroundColor: getDummyColor(gift.bank_name) }}
+                >
+                  {gift.bank_name ? gift.bank_name.charAt(0).toUpperCase() : <CreditCard size={20} />}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-ink">{gift.bank_name || "Nama Bank / E-Wallet"}</h4>
+                  <p className="text-xs text-slate-soft">Dummy icon di-generate otomatis</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField label="Bank / E-Wallet Name" id={`gift-bank-${index}`}>
+                  <input id={`gift-bank-${index}`} type="text" className={inputClass} placeholder="BCA / GoPay / Dana" value={gift.bank_name || ""} onChange={(e) => updateGift(index, "bank_name", e.target.value)} required />
+                </FormField>
+                <FormField label="Account Number" id={`gift-no-rek-${index}`}>
+                  <input id={`gift-no-rek-${index}`} type="text" className={inputClass} placeholder="1234567890" value={gift.account_number || ""} onChange={(e) => updateGift(index, "account_number", e.target.value)} required />
+                </FormField>
+                <FormField label="Account Name" id={`gift-nama-rek-${index}`}>
+                  <input id={`gift-nama-rek-${index}`} type="text" className={inputClass} placeholder="Romeo Montague" value={gift.account_name || ""} onChange={(e) => updateGift(index, "account_name", e.target.value)} required />
+                </FormField>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {data.length === 0 && (
+          <div className="text-center py-10 border-2 border-dashed border-cream-200 rounded-2xl">
+            <Gift size={24} className="text-slate-soft/40 mx-auto mb-2" />
+            <p className="text-sm text-slate-soft">Belum ada akun hadiah yang ditambahkan.</p>
+          </div>
+        )}
+
+        <button 
+          type="button" 
+          onClick={addGift}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-lavender-300 text-lavender-600 hover:bg-lavender-50 transition-colors text-sm font-medium"
+        >
+          <Plus size={16} /> Tambah Akun / Rekening
+        </button>
+      </div>
+
       <SaveButton loading={saving} />
     </form>
   );

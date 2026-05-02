@@ -247,7 +247,7 @@ export async function getAssetMapsApi(token: string, id: number | string) {
 }
 
 export async function getAssetGiftApi(token: string, id: number | string) {
-  return apiFetch<{ data: AssetGift }>(`/asset-gift/${id}`, {
+  return apiFetch<{ data: AssetGift[] }>(`/asset-gift/${id}`, {
     method: "GET",
     headers: authHeaders(token),
   });
@@ -321,7 +321,7 @@ export async function updateAssetMapsApi(
 
 export async function updateAssetGiftApi(
   token: string,
-  payload: { id_undangan: number; gopay?: string; bank?: string; no_rek?: string; nama_rek?: string },
+  payload: { id_undangan: number; gifts: Omit<AssetGift, "id" | "id_undangan">[] },
 ) {
   return apiFetch<ApiResponse>("/update-asset-gift", {
     method: "PUT",
@@ -640,10 +640,9 @@ export interface AssetMaps {
 export interface AssetGift {
   id: number;
   id_undangan: number;
-  gopay?: string;
-  bank?: string;
-  no_rek?: string;
-  nama_rek?: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
 }
 
 export interface AssetBacksound {
