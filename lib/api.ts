@@ -346,6 +346,15 @@ export async function getTemplatePricesApi() {
   });
 }
 
+// ── Payment Logos (Public/Global) ──────────────────────────────────────────
+
+export async function getPaymentLogosApi() {
+  return apiFetch<{ data: { id: number; name: string; path: string }[] }>("/payment-logos", {
+    method: "GET",
+    headers: { "x-api-key": API_KEY },
+  });
+}
+
 // ── Undangan Update (Draft only) ───────────────────────────────────────────
 
 export async function updateUndanganApi(
@@ -643,6 +652,13 @@ export interface AssetGift {
   bank_name: string;
   account_number: string;
   account_name: string;
+  logo_id?: number;
+  logo_link?: string;
+  logo?: {
+    id: number;
+    name: string;
+    path: string;
+  };
 }
 
 export interface AssetBacksound {

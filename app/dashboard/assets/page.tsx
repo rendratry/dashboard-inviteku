@@ -18,7 +18,7 @@ import {
   getAssetMapsApi, updateAssetMapsApi,
   getAssetGiftApi, updateAssetGiftApi,
   getAssetBacksoundApi, updateAssetBacksoundApi,
-  getUndanganApi, getLibraryAssetsApi,
+  getUndanganApi, getLibraryAssetsApi, getPaymentLogosApi,
   type AssetOpening, type AssetMempelai, type AssetAkad,
   type AssetResepsi, type AssetGallery, type AssetMaps, type AssetGift,
   type AssetBacksound,
@@ -589,26 +589,169 @@ function MapsTab({ token, idUndangan }: { token: string; idUndangan: number }) {
   );
 }
 
+function PaymentLogoPicker({
+  logos, currentId, onSelect
+}: {
+  logos: { id: number; name: string; path: string }[];
+  currentId?: number;
+  onSelect: (id: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const selectedLogo = logos.find(l => l.id === currentId);
+  const filteredList = logos.filter(l => 
+    l.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-1.5 w-full">
+      <p className="text-sm font-medium text-ink-muted">Logo Pembayaran</p>
+      
+      <button 
+        type="button" 
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 hover:bg-white hover:border-lavender-200 transition-all cursor-pointer group"
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          {currentId && selectedLogo ? (
+            <>
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-cream-200 p-1 bg-white">
+                <img src={selectedLogo.path} className="w-full h-full object-contain" alt={selectedLogo.name} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-ink font-semibold">Logo Terpilih</p>
+                <p className="text-[10px] text-slate-soft font-mono truncate">{selectedLogo.name.replace(/\.[^/.]+$/, "")}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-10 h-10 rounded-lg bg-lavender-100 flex items-center justify-center text-lavender-400 flex-shrink-0">
+                <Image size={18} />
+              </div>
+              <span className="text-sm text-ink-muted italic">Pilih Logo...</span>
+            </>
+          )}
+        </div>
+        <ChevronDown size={14} className="text-slate-soft" />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[100]" onClick={() => setOpen(false)} 
+            />
+            
+            <div className="fixed inset-0 flex items-center justify-center z-[110] p-4 pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden pointer-events-auto flex flex-col"
+              >
+                <div className="p-6 border-b border-cream-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-lavender-100 flex items-center justify-center text-lavender-500">
+                      <Image size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-ink">Pilih Logo Pembayaran</h3>
+                      <p className="text-xs text-slate-soft">Pilih logo bank atau e-wallet</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-cream-100 text-slate-soft cursor-pointer">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="px-6 py-4 bg-cream-50/50 border-b border-cream-100">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-soft" size={16} />
+                    <input 
+                      type="text" placeholder="Cari logo..." value={search} onChange={(e) => setSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-cream-200 rounded-xl text-sm focus:border-lavender-300 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                  {filteredList.length === 0 ? (
+                    <div className="py-20 text-center text-slate-soft italic text-sm">
+                      Logo tidak ditemukan.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {filteredList.map(l => (
+                        <button 
+                          key={l.id} type="button"
+                          onClick={() => { onSelect(l.id); setOpen(false); }}
+                          className={`flex flex-col rounded-2xl border transition-all cursor-pointer group overflow-hidden ${
+                            currentId === l.id ? "border-blush-400 ring-2 ring-blush-100 shadow-md" : "border-cream-200 hover:border-lavender-300 bg-cream-50/30"
+                          }`}
+                        >
+                          <div className="aspect-square bg-white relative p-4 flex items-center justify-center">
+                            <img src={l.path} alt={l.name} className="max-w-full max-h-full object-contain" />
+                            {currentId === l.id && (
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-blush-400 text-white flex items-center justify-center shadow-lg">
+                                <CheckCircle2 size={14} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3 border-t border-cream-100 bg-white text-center">
+                            <p className="text-xs font-bold text-ink truncate">{l.name.replace(/\.[^/.]+$/, "")}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
   const [data, setData] = useState<AssetGift[]>([]);
+  const [logos, setLogos] = useState<{ id: number; name: string; path: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
 
   useEffect(() => {
     setLoading(true); setData([]);
-    getAssetGiftApi(token, idUndangan)
-      .then((r) => {
-        const arr = Array.isArray(r.data) ? r.data : [];
+    Promise.all([
+      getAssetGiftApi(token, idUndangan),
+      getPaymentLogosApi()
+    ])
+      .then(([rGift, rLogos]) => {
+        const arr = Array.isArray(rGift.data) ? rGift.data : [];
         setData(arr);
+        setLogos(Array.isArray(rLogos.data) ? rLogos.data : []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token, idUndangan]);
 
-  const updateGift = (index: number, field: keyof AssetGift, value: string) => {
+  const updateGift = (index: number, field: keyof AssetGift, value: string | number) => {
     const newData = [...data];
-    newData[index] = { ...newData[index], [field]: value };
+    newData[index] = { ...newData[index], [field]: value } as AssetGift;
+    
+    // Automatically set bank_name when logo changes, if bank_name is empty
+    if (field === "logo_id") {
+      const selectedLogo = logos.find(l => l.id === value);
+      if (selectedLogo && !newData[index].bank_name) {
+        // e.g. "bca.png" -> "Bca", "shopeepay.png" -> "Shopeepay"
+        const nameWithoutExt = selectedLogo.name.replace(/\.[^/.]+$/, "");
+        newData[index].bank_name = nameWithoutExt.toUpperCase();
+      }
+    }
+    
     setData(newData);
   };
 
@@ -631,6 +774,7 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
         bank_name: d.bank_name,
         account_number: d.account_number,
         account_name: d.account_name,
+        logo_id: d.logo_id,
       })) 
     };
     try { 
@@ -657,49 +801,60 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
       
       <div className="space-y-4">
         <AnimatePresence>
-          {data.map((gift, index) => (
-            <motion.div 
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="p-5 rounded-2xl border border-cream-200 bg-cream-50/50 relative group"
-            >
-              <button 
-                type="button" 
-                onClick={() => removeGift(index)}
-                className="absolute top-4 right-4 p-2 text-slate-soft hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                title="Remove Gift"
+          {data.map((gift, index) => {
+            const logoUrl = gift.logo_link || gift.logo?.path || logos.find(l => l.id === gift.logo_id)?.path;
+            
+            return (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-5 rounded-2xl border border-cream-200 bg-cream-50/50 relative group"
               >
-                <Trash2 size={16} />
-              </button>
-              
-              <div className="flex items-center gap-4 mb-5">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
-                  style={{ backgroundColor: getDummyColor(gift.bank_name) }}
+                <button 
+                  type="button" 
+                  onClick={() => removeGift(index)}
+                  className="absolute top-4 right-4 p-2 text-slate-soft hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Remove Gift"
                 >
-                  {gift.bank_name ? gift.bank_name.charAt(0).toUpperCase() : <CreditCard size={20} />}
+                  <Trash2 size={16} />
+                </button>
+                
+                <div className="flex items-center gap-4 mb-5">
+                  {logoUrl ? (
+                    <div className="w-16 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm p-2 border border-cream-200">
+                      <img src={logoUrl} alt={gift.bank_name || "Logo"} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
+                      style={{ backgroundColor: getDummyColor(gift.bank_name) }}
+                    >
+                      {gift.bank_name ? gift.bank_name.charAt(0).toUpperCase() : <CreditCard size={20} />}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-semibold text-ink">{gift.bank_name || "Nama Bank / E-Wallet"}</h4>
+                    <p className="text-xs text-slate-soft">{logoUrl ? "Logo Pembayaran" : "Dummy icon di-generate otomatis"}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-ink">{gift.bank_name || "Nama Bank / E-Wallet"}</h4>
-                  <p className="text-xs text-slate-soft">Dummy icon di-generate otomatis</p>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField label="Bank / E-Wallet Name" id={`gift-bank-${index}`}>
-                  <input id={`gift-bank-${index}`} type="text" className={inputClass} placeholder="BCA / GoPay / Dana" value={gift.bank_name || ""} onChange={(e) => updateGift(index, "bank_name", e.target.value)} required />
-                </FormField>
-                <FormField label="Account Number" id={`gift-no-rek-${index}`}>
-                  <input id={`gift-no-rek-${index}`} type="text" className={inputClass} placeholder="1234567890" value={gift.account_number || ""} onChange={(e) => updateGift(index, "account_number", e.target.value)} required />
-                </FormField>
-                <FormField label="Account Name" id={`gift-nama-rek-${index}`}>
-                  <input id={`gift-nama-rek-${index}`} type="text" className={inputClass} placeholder="Romeo Montague" value={gift.account_name || ""} onChange={(e) => updateGift(index, "account_name", e.target.value)} required />
-                </FormField>
-              </div>
-            </motion.div>
-          ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <PaymentLogoPicker logos={logos} currentId={gift.logo_id} onSelect={(id) => updateGift(index, "logo_id", id)} />
+                  <FormField label="Bank / E-Wallet Name" id={`gift-bank-${index}`}>
+                    <input id={`gift-bank-${index}`} type="text" className={inputClass} placeholder="BCA / GoPay / Dana" value={gift.bank_name || ""} onChange={(e) => updateGift(index, "bank_name", e.target.value)} required />
+                  </FormField>
+                  <FormField label="Account Number" id={`gift-no-rek-${index}`}>
+                    <input id={`gift-no-rek-${index}`} type="text" className={inputClass} placeholder="1234567890" value={gift.account_number || ""} onChange={(e) => updateGift(index, "account_number", e.target.value)} required />
+                  </FormField>
+                  <FormField label="Account Name" id={`gift-nama-rek-${index}`}>
+                    <input id={`gift-nama-rek-${index}`} type="text" className={inputClass} placeholder="Romeo Montague" value={gift.account_name || ""} onChange={(e) => updateGift(index, "account_name", e.target.value)} required />
+                  </FormField>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
 
         {data.length === 0 && (
