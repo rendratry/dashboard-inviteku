@@ -188,8 +188,24 @@ export default function LoginPage() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ delay: 0.55 }}
+          className="mt-5 text-center text-sm text-slate-soft"
+        >
+          Belum punya akun?{" "}
+          <button
+            id="go-to-register"
+            onClick={() => router.push("/register")}
+            className="font-semibold text-blush-500 hover:text-blush-400 transition-colors"
+          >
+            Daftar di sini
+          </button>
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="mt-6 text-center text-xs text-slate-soft/70"
+          className="mt-3 text-center text-xs text-slate-soft/70"
         >
           Inviteku Admin • Digital Wedding Invitations
         </motion.p>

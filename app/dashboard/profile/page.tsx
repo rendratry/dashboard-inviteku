@@ -16,11 +16,10 @@ function Alert({ type, message }: { type: AlertType; message: string }) {
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
-        type === "success"
+      className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${type === "success"
           ? "bg-mint-100 text-mint-500 border border-mint-200"
           : "bg-red-50 text-red-500 border border-red-100"
-      }`}
+        }`}
     >
       {type === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
       {message}
@@ -68,7 +67,7 @@ export default function ProfilePage() {
     setAvatarAlert({ type: null, message: "" });
     try {
       const fd = new FormData();
-      fd.append("avatar", file);
+      fd.append("file", file);
       await updateAvatarApi(token, fd);
       setUser({ ...(user!), avatar: avatarPreview ?? user?.avatar });
       setAvatarAlert({ type: "success", message: "Avatar updated successfully!" });

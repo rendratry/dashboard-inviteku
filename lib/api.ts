@@ -101,6 +101,47 @@ export async function loginApi(email: string, password: string) {
   });
 }
 
+export async function registerApi(payload: {
+  username: string;
+  email: string;
+  password: string;
+  name: string;
+}) {
+  return apiFetch<{
+    code: number;
+    status: string;
+    data: RegisteredUser;
+  }>("/register-user", {
+    method: "POST",
+    headers: publicHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifyOtpApi(payload: { id: number; otp: number }) {
+  return apiFetch<{
+    code: number;
+    status: string;
+    data: { username: string; email: string; name: string };
+  }>("/verification", {
+    method: "POST",
+    headers: publicHeaders(),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resendOtpApi(email: string) {
+  return apiFetch<{
+    code: number;
+    status: string;
+    data: unknown;
+  }>("/resend-otp", {
+    method: "POST",
+    headers: publicHeaders(),
+    body: JSON.stringify({ email }),
+  });
+}
+
 // ── Authenticated endpoints ────────────────────────────────────────────────
 
 export async function getUserApi(token: string) {
@@ -489,7 +530,7 @@ export async function getKomentarApi(token: string, id: number | string) {
 
 export async function updateKomentarApi(
   token: string,
-  payload: { id: number; status: boolean },
+  payload: { id: number; id_undangan: number; from: string; pesan: string; status: boolean },
 ) {
   return apiFetch<ApiResponse>("/update-asset-comentar", {
     method: "PUT",
@@ -512,6 +553,14 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+}
+
+export interface RegisteredUser {
+  id: number;
+  username: string;
+  email: string;
+  name: string;
+  register_done: boolean;
 }
 
 export interface Undangan {

@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Eye, EyeOff, Trash2, X, AlertTriangle, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
-import { getKomentarApi, updateKomentarApi, deleteKomentarApi, type Komentar } from "@/lib/api";
-
-const ID_UNDANGAN = 1;
+import { getKomentarApi, updateKomentarApi, deleteKomentarApi, getUndanganApi, type Komentar } from "@/lib/api";
 
 // ── Comment Card ───────────────────────────────────────────────────────────
 
@@ -124,25 +122,56 @@ type FilterType = "all" | "visible" | "hidden";
 
 export default function KomentarPage() {
   const { token } = useAuthStore();
+  const [idUndangan, setIdUndangan] = useState<number | null>(null);
   const [comments, setComments] = useState<Komentar[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Komentar | null>(null);
 
-  const fetchComments = useCallback(async () => {
+  // Fetch undangan first — loading is managed here so it never gets stuck
+  useEffect(() => {
     if (!token) return;
     setLoading(true);
+    setError(null);
+    getUndanganApi(token)
+      .then((res) => {
+        const first = Array.isArray(res.data) ? res.data[0] : null;
+        if (first) {
+          setIdUndangan(first.id);
+        } else {
+          // No undangan yet — show empty state, not error
+          setComments([]);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        setError("Gagal memuat data undangan.");
+        setLoading(false);
+      });
+  }, [token]);
+
+  const fetchComments = useCallback(async () => {
+    if (!token || !idUndangan) return;
+    setLoading(true);
+    setError(null);
     try {
-      const res = await getKomentarApi(token, ID_UNDANGAN);
+      const res = await getKomentarApi(token, idUndangan);
       setComments(Array.isArray(res.data) ? res.data : []);
     } catch (e: unknown) {
-      const err = e as { message?: string };
-      setError(err?.message ?? "Failed to load comments.");
-    } finally { setLoading(false); }
-  }, [token]);
+      const err = e as { message?: string; status?: number };
+      // 400 / 404 from backend means "no data yet" — treat as empty list
+      if (err?.status === 400 || err?.status === 404) {
+        setComments([]);
+      } else {
+        setError(err?.message ?? "Gagal memuat komentar.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [token, idUndangan]);
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
@@ -150,7 +179,13 @@ export default function KomentarPage() {
     if (!token) return;
     setTogglingId(comment.id);
     try {
-      await updateKomentarApi(token, { id: comment.id, status: !comment.status });
+      await updateKomentarApi(token, {
+        id: comment.id,
+        id_undangan: comment.id_undangan,
+        from: comment.from,
+        pesan: comment.pesan,
+        status: !comment.status,
+      });
       setComments((prev) => prev.map((c) => c.id === comment.id ? { ...c, status: !c.status } : c));
     } catch { /* noop */ } finally { setTogglingId(null); }
   };
