@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Plus, CheckCircle2, AlertTriangle, Loader2, Link2,
-  CalendarClock, Eye, Edit2, CreditCard, X, Upload, ImageIcon,
-  Clock, Ban, Send,
+  CalendarClock, Eye, Edit2, CreditCard, X, ImageIcon,
+  Clock, Ban, Send, Sparkles, LayoutGrid, Check,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import {
@@ -27,6 +27,21 @@ function formatRupiah(amount: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 }
 
+const CARD_GRADIENTS = [
+  { from: "#ffc2cf", to: "#d9c8ff" },
+  { from: "#d9c8ff", to: "#b3e3ff" },
+  { from: "#b3e3ff", to: "#9af5db" },
+  { from: "#9af5db", to: "#ffc2cf" },
+];
+
+const DEFAULT_FEATURES = [
+  "Undangan digital eksklusif",
+  "Manajemen tamu unlimited",
+  "Upload foto & galeri",
+  "Musik latar pilihan",
+  "RSVP & kotak ucapan",
+];
+
 // ── Status Badge ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status?: string; isPublished?: boolean }) {
@@ -44,6 +59,123 @@ function StatusBadge({ status }: { status?: string; isPublished?: boolean }) {
   );
 }
 
+// ── Template Picker Modal ──────────────────────────────────────────────────
+
+function TemplatePickerModal({
+  templates, selected, onSelect, onClose
+}: {
+  templates: TemplatePrice[]; selected: string; onSelect: (t: string) => void; onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-ink/40 backdrop-blur-md">
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-3xl shadow-float w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-cream-200 bg-white z-10 sticky top-0">
+          <div>
+            <h2 className="text-xl font-bold text-ink flex items-center gap-2">
+              <LayoutGrid className="text-blush-400" size={24} />
+              Pilih Template
+            </h2>
+            <p className="text-sm text-slate-soft mt-1">Pilih desain yang paling cocok untuk momen spesial Anda.</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-cream-100 text-slate-soft hover:text-red-400 transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-cream-50">
+          {templates.length === 0 ? (
+            <div className="text-center py-12">
+              <Loader2 size={32} className="animate-spin text-blush-400 mx-auto mb-4" />
+              <p className="text-slate-soft">Memuat template...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {templates.map((price, index) => {
+                const grad = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+                const isSelected = selected === price.template;
+                const features = price.features ?? DEFAULT_FEATURES;
+
+                return (
+                  <motion.div
+                    key={price.id}
+                    whileHover={{ y: -4 }}
+                    onClick={() => {
+                      onSelect(price.template);
+                      onClose();
+                    }}
+                    className={`relative bg-white rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden flex flex-col ${
+                      isSelected ? 'ring-4 ring-blush-400 shadow-lg' : 'shadow-card hover:shadow-float border border-cream-200'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 z-10 bg-blush-500 text-white rounded-full p-1.5 shadow-md">
+                        <Check size={16} strokeWidth={3} />
+                      </div>
+                    )}
+                    
+                    {price.thumbnail ? (
+                      <div className="w-full h-40 overflow-hidden relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={price.thumbnail} alt={price.name_template} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                        <div className="absolute bottom-3 left-3 text-white">
+                          <p className="font-bold text-lg leading-tight drop-shadow-md">{price.name_template}</p>
+                          <p className="text-xs opacity-90 drop-shadow-md">{price.template}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-24 w-full relative flex items-end p-4" style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}>
+                        <div className="text-white">
+                          <p className="font-bold text-lg leading-tight drop-shadow-sm">{price.name_template}</p>
+                          <p className="text-xs opacity-90 drop-shadow-sm">{price.template}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="mb-4">
+                        <p className="text-2xl font-extrabold text-ink">{formatRupiah(price.effective_price)}</p>
+                        {price.description && (
+                          <p className="text-xs text-slate-soft mt-1 leading-relaxed line-clamp-2">{price.description}</p>
+                        )}
+                      </div>
+                      <ul className="space-y-1.5 flex-1 mb-4">
+                        {features.slice(0, 4).map((f, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-ink-muted">
+                            <CheckCircle2 size={12} className="text-mint-400 mt-0.5 flex-shrink-0" />
+                            <span className="truncate">{f}</span>
+                          </li>
+                        ))}
+                        {features.length > 4 && (
+                          <li className="text-xs text-slate-soft pl-5 italic">+{features.length - 4} fitur lainnya</li>
+                        )}
+                      </ul>
+                      
+                      <button 
+                        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                          isSelected 
+                            ? 'bg-blush-50 text-blush-600' 
+                            : 'bg-cream-100 text-ink hover:bg-cream-200'
+                        }`}
+                      >
+                        {isSelected ? 'Terpilih' : 'Pilih Template'}
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Edit Modal ─────────────────────────────────────────────────────────────
 
 function EditModal({
@@ -56,6 +188,7 @@ function EditModal({
   const [template, setTemplate] = useState(undangan.template ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,46 +201,92 @@ function EditModal({
     } finally { setSaving(false); }
   };
 
+  const selectedTemplateData = templates.find(t => t.template === template);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/30 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-ink flex items-center gap-2"><Edit2 size={16} className="text-blush-400" />Edit Undangan</h2>
-          <button onClick={onClose} className="text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
-        </div>
-        <form onSubmit={save} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-ink-muted">Nama Undangan</label>
-            <input value={nama} onChange={e => setNama(e.target.value)} required
-              className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-cream-200 pb-4">
+            <h2 className="font-bold text-ink flex items-center gap-2 text-lg"><Edit2 size={18} className="text-blush-400" />Edit Undangan</h2>
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-cream-100 text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
           </div>
-          {templates.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-ink-muted">Template</label>
-              <select value={template} onChange={e => setTemplate(e.target.value)}
-                className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm">
-                <option value="">-- Pilih Template --</option>
-                {templates.map(t => (
-                  <option key={t.id} value={t.template}>{t.name_template} — {formatRupiah(t.effective_price)}</option>
-                ))}
-              </select>
+          
+          <form onSubmit={save} className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-ink-muted">Nama Undangan</label>
+              <input value={nama} onChange={e => setNama(e.target.value)} required
+                className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
             </div>
-          )}
-          {err && <p className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle size={12} />{err}</p>}
-          <div className="flex gap-3 justify-end pt-1">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-              {saving ? <><Loader2 size={13} className="animate-spin" />Menyimpan…</> : "Simpan"}
-            </motion.button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+            
+            {templates.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-ink-muted">Template</label>
+                
+                {template && selectedTemplateData ? (
+                  <div className="border border-cream-300 bg-white rounded-xl p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {selectedTemplateData.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={selectedTemplateData.thumbnail} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-lavender-200 to-blush-200 flex items-center justify-center">
+                          <LayoutGrid size={16} className="text-white" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-sm text-ink">{selectedTemplateData.name_template}</p>
+                        <p className="text-xs text-slate-soft font-mono">{template}</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setShowPicker(true)}
+                      className="text-xs font-medium text-blush-500 hover:text-blush-600 hover:bg-blush-50 px-3 py-1.5 rounded-lg transition-colors">
+                      Ganti
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setShowPicker(true)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 hover:bg-cream-100 transition-colors text-left">
+                    <span className="text-sm text-slate-soft">{template ? template : "Pilih Template..."}</span>
+                    <LayoutGrid size={16} className="text-slate-soft" />
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {err && (
+              <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <p>{err}</p>
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end pt-2">
+              <button type="button" onClick={onClose}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
+                style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+                {saving ? <><Loader2 size={16} className="animate-spin" />Menyimpan…</> : "Simpan Perubahan"}
+              </motion.button>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+
+      <AnimatePresence>
+        {showPicker && (
+          <TemplatePickerModal 
+            templates={templates} 
+            selected={template} 
+            onSelect={setTemplate} 
+            onClose={() => setShowPicker(false)} 
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -150,63 +329,87 @@ function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/30 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-ink flex items-center gap-2"><CreditCard size={16} className="text-blush-400" />Request Publish</h2>
-          <button onClick={onClose} className="text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-cream-200 pb-4">
+          <h2 className="font-bold text-ink flex items-center gap-2 text-lg"><CreditCard size={18} className="text-blush-400" />Request Publish</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-cream-100 text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
         </div>
 
         {/* Price Info */}
-        <div className="bg-cream-50 rounded-xl p-4 space-y-1 border border-cream-300">
-          <p className="text-xs text-slate-soft">Template yang dipilih</p>
-          <p className="font-semibold text-ink">{undangan.template ?? "—"}</p>
-          {templatePrice && <p className="text-lg font-extrabold text-blush-500">{formatRupiah(templatePrice.effective_price)}</p>}
+        <div className="bg-cream-50 rounded-xl p-4 border border-cream-300 flex items-center gap-4">
+          {templatePrice?.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={templatePrice.thumbnail} alt="" className="w-16 h-16 rounded-lg object-cover border border-cream-200" />
+          ) : (
+            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-lavender-200 to-blush-200 flex items-center justify-center">
+              <Sparkles className="text-white" size={20} />
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-slate-soft mb-0.5">Template {undangan.template}</p>
+            <p className="font-semibold text-ink text-sm">{templatePrice?.name_template ?? "—"}</p>
+            {templatePrice && <p className="text-lg font-extrabold text-blush-500 mt-0.5">{formatRupiah(templatePrice.effective_price)}</p>}
+          </div>
         </div>
 
         {/* Bank Info */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Instruksi Pembayaran</p>
-          <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-4 space-y-2 text-sm">
+          <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-4 space-y-2.5 text-sm">
             <div className="flex justify-between"><span className="text-slate-soft">Bank</span><span className="font-semibold text-ink">BCA</span></div>
-            <div className="flex justify-between"><span className="text-slate-soft">No. Rekening</span><span className="font-semibold text-ink font-mono">1234567890</span></div>
+            <div className="flex justify-between"><span className="text-slate-soft">No. Rekening</span><span className="font-semibold text-ink font-mono text-base">1234567890</span></div>
             <div className="flex justify-between"><span className="text-slate-soft">Atas Nama</span><span className="font-semibold text-ink">Inviteku</span></div>
-            {templatePrice && <div className="flex justify-between border-t border-lavender-200 pt-2"><span className="text-slate-soft">Jumlah</span><span className="font-bold text-blush-500">{formatRupiah(templatePrice.effective_price)}</span></div>}
+            {templatePrice && <div className="flex justify-between border-t border-lavender-200 pt-2.5 mt-1"><span className="text-slate-soft">Jumlah Transfer</span><span className="font-bold text-blush-500 text-lg">{formatRupiah(templatePrice.effective_price)}</span></div>}
           </div>
         </div>
 
         {/* Upload */}
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={submit} className="space-y-5">
+          <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Upload Bukti Transfer</p>
             <div
               onClick={() => inputRef.current?.click()}
-              className="border-2 border-dashed border-blush-200 rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-blush-400 hover:bg-blush-50 transition-all"
+              className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
+                preview ? 'border-blush-300 bg-blush-50/50' : 'border-cream-300 bg-cream-50 hover:border-blush-400 hover:bg-blush-50'
+              }`}
             >
               {preview ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={preview} alt="Preview bukti transfer" className="max-h-40 rounded-lg object-contain" />
+                <img src={preview} alt="Preview bukti transfer" className="max-h-48 rounded-lg object-contain shadow-sm" />
               ) : (
                 <>
-                  <ImageIcon size={28} className="text-blush-300" />
-                  <p className="text-xs text-slate-soft">Klik untuk pilih gambar</p>
+                  <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-blush-300 mb-1">
+                    <ImageIcon size={24} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-ink">Klik untuk pilih gambar</p>
+                    <p className="text-xs text-slate-soft mt-1">Format: JPG, PNG (Max 5MB)</p>
+                  </div>
                 </>
               )}
             </div>
             <input ref={inputRef} type="file" accept="image/*" className="hidden"
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            {file && <p className="text-xs text-mint-500 flex items-center gap-1"><CheckCircle2 size={11} />{file.name}</p>}
+            {file && <p className="text-xs text-mint-600 flex items-center gap-1.5 font-medium"><CheckCircle2 size={14} />{file.name}</p>}
           </div>
-          {err && <p className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle size={12} />{err}</p>}
-          <div className="flex gap-3 justify-end">
+          
+          {err && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <p>{err}</p>
+            </div>
+          )}
+          
+          <div className="flex gap-3 justify-end pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
               disabled={!file || uploading}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
               style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-              {uploading ? <><Loader2 size={13} className="animate-spin" />Mengirim…</> : <><Send size={13} />Kirim Request</>}
+              {uploading ? <><Loader2 size={16} className="animate-spin" />Mengirim…</> : <><Send size={16} />Kirim Request</>}
             </motion.button>
           </div>
         </form>
@@ -238,6 +441,7 @@ function UndanganCard({
 
   const status = payStatus?.status ?? (undangan.is_published ? "approved" : "draft");
   const isDraft = status === "draft";
+  const templateData = templates.find(t => t.template === undangan.template);
 
   const handleCheckoutSuccess = () => {
     setCheckoutOpen(false);
@@ -251,81 +455,112 @@ function UndanganCard({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05, duration: 0.35 }}
-        className="bg-white rounded-2xl p-5 shadow-card hover:shadow-float transition-all duration-300"
+        className="bg-white rounded-2xl p-5 sm:p-6 shadow-card hover:shadow-float transition-all duration-300 border border-cream-100"
       >
-        <div className="flex items-start gap-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 mt-0.5"
-            style={{ background: `linear-gradient(135deg, hsl(${(index * 55) % 360}, 65%, 72%) 0%, hsl(${(index * 55 + 60) % 360}, 65%, 72%) 100%)` }}
-          >
-            <Mail size={22} strokeWidth={1.5} />
-          </div>
+        <div className="flex flex-col sm:flex-row items-start gap-5">
+          
+          {/* Visual Indicator */}
+          {templateData?.thumbnail ? (
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 border border-cream-200 shadow-sm relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={templateData.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Mail className="text-white drop-shadow-md" size={20} />
+              </div>
+            </div>
+          ) : (
+            <div
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm"
+              style={{ background: `linear-gradient(135deg, hsl(${(index * 55) % 360}, 65%, 72%) 0%, hsl(${(index * 55 + 60) % 360}, 65%, 72%) 100%)` }}
+            >
+              <Mail size={28} strokeWidth={1.5} />
+            </div>
+          )}
 
-          <div className="flex-1 min-w-0 space-y-1">
-            <p className="font-semibold text-ink text-sm">{undangan.nama}</p>
-            {undangan.key_undangan && (
-              <p className="text-xs text-slate-soft flex items-center gap-1 truncate">
-                <Link2 size={10} className="flex-shrink-0" />
-                <span className="font-mono text-lavender-500">{undangan.key_undangan}</span>
-              </p>
-            )}
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-0 space-y-2 w-full">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-ink text-lg line-clamp-1">{undangan.nama}</h3>
+                {undangan.key_undangan && (
+                  <a href={`https://inviteku.com/${undangan.key_undangan}`} target="_blank" rel="noreferrer"
+                    className="text-sm text-lavender-500 hover:text-lavender-600 hover:underline flex items-center gap-1.5 mt-0.5 w-fit">
+                    <Link2 size={14} />
+                    <span className="font-mono">{undangan.key_undangan}</span>
+                  </a>
+                )}
+              </div>
+              <div className="flex-shrink-0 hidden sm:block">
+                <StatusBadge status={status} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap pt-1">
               {undangan.template && (
-                <span className="text-xs text-slate-soft/70 bg-cream-100 px-2 py-0.5 rounded-lg">{undangan.template}</span>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-ink-muted bg-cream-100 px-2.5 py-1 rounded-lg border border-cream-200">
+                  <LayoutGrid size={12} className="text-slate-soft" />
+                  {templateData?.name_template || undangan.template}
+                </div>
               )}
               {expDate && (
-                <span className="text-xs text-slate-soft flex items-center gap-1">
-                  <CalendarClock size={10} />Exp: {expDate}
-                </span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-soft bg-cream-50 px-2.5 py-1 rounded-lg border border-cream-100">
+                  <CalendarClock size={12} /> Exp: {expDate}
+                </div>
               )}
             </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <StatusBadge status={status} />
-            {undangan.key_undangan && (
-              <a href={`https://inviteku.com/${undangan.key_undangan}`} target="_blank" rel="noreferrer"
-                className="text-xs text-lavender-500 hover:underline flex items-center gap-1">
-                <Eye size={11} />Lihat
-              </a>
-            )}
+            
+            {/* Mobile status badge */}
+            <div className="sm:hidden pt-2">
+              <StatusBadge status={status} />
+            </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-cream-200">
-          {isDraft && (
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => setEditOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-cream-300 text-ink-muted hover:bg-cream-100 transition-all"
-            >
-              <Edit2 size={12} />Edit
-            </motion.button>
+        <div className="flex items-center flex-wrap gap-3 mt-5 pt-5 border-t border-cream-100">
+          {undangan.key_undangan && (
+            <a href={`https://inviteku.com/${undangan.key_undangan}`} target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-lavender-200 text-lavender-600 hover:bg-lavender-50 transition-colors">
+              <Eye size={16} /> Lihat Undangan
+            </a>
           )}
+          
+          {isDraft && (
+            <button
+              onClick={() => setEditOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-cream-300 text-ink-muted hover:bg-cream-100 transition-colors"
+            >
+              <Edit2 size={16} /> Edit Data
+            </button>
+          )}
+
+          <div className="flex-1" />
 
           {isDraft && !checkoutDone && (
             <motion.button
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => setCheckoutOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md"
               style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}
             >
-              <CreditCard size={12} />Request Publish
+              <CreditCard size={16} /> Request Publish
             </motion.button>
           )}
 
-          {checkoutDone && (
-            <span className="flex items-center gap-1 text-xs text-peach-500">
-              <Clock size={11} />Menunggu verifikasi admin
-            </span>
+          {(checkoutDone || status === "pending") && (
+            <div className="flex items-center gap-2 text-sm font-medium text-peach-500 bg-peach-50 px-4 py-2 rounded-xl border border-peach-100">
+              <Clock size={16} className="animate-pulse" /> Menunggu Verifikasi
+            </div>
           )}
         </div>
 
         {payStatus?.note && (
-          <p className="mt-2 text-xs text-slate-soft bg-cream-50 rounded-lg px-3 py-2 border border-cream-200">
-            Catatan Admin: {payStatus.note}
-          </p>
+          <div className="mt-4 flex gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+            <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">Catatan dari Admin</p>
+              <p className="text-sm text-red-600 mt-0.5">{payStatus.note}</p>
+            </div>
+          </div>
         )}
       </motion.div>
 
@@ -361,6 +596,9 @@ export default function UndanganPage() {
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [templates, setTemplates] = useState<TemplatePrice[]>([]);
+  
+  // Picker state
+  const [showPicker, setShowPicker] = useState(false);
 
   const fetchList = useCallback(async () => {
     if (!token) return;
@@ -386,113 +624,172 @@ export default function UndanganPage() {
       await createUndanganApi(token, { nama: nama.trim(), template: selectedTemplate });
       setCreateAlert({ type: "success", message: `Undangan "${nama.trim()}" berhasil dibuat!` });
       setNama(""); setSelectedTemplate(""); fetchList();
+      
+      // Auto hide success message after 5s
+      setTimeout(() => setCreateAlert({ type: null, message: "" }), 5000);
     } catch (err: unknown) {
       setCreateAlert({ type: "error", message: (err as { message?: string })?.message ?? "Gagal membuat undangan." });
     } finally { setCreating(false); }
   };
 
+  const selectedTemplateData = templates.find(t => t.template === selectedTemplate);
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md"
           style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
-          <Mail size={20} />
+          <Mail size={24} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-ink">Buat Undangan</h1>
-          <p className="text-sm text-slate-soft">Buat undangan digital baru untuk pernikahan Anda</p>
+          <h1 className="text-2xl font-bold text-ink">Buat Undangan</h1>
+          <p className="text-slate-soft mt-0.5">Kelola dan buat undangan digital baru untuk momen spesial Anda.</p>
         </div>
       </motion.div>
 
+      {/* Create Form */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="bg-white rounded-2xl p-6 shadow-card">
-        <h2 className="font-semibold text-ink mb-5 flex items-center gap-2">
-          <Plus size={18} className="text-blush-400" />Undangan Baru
+        className="bg-white rounded-3xl p-6 sm:p-8 shadow-card border border-cream-100">
+        <h2 className="text-lg font-bold text-ink mb-6 flex items-center gap-2">
+          <Plus size={20} className="text-blush-500" />
+          Mulai Undangan Baru
         </h2>
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="undangan-nama" className="block text-sm font-medium text-ink-muted">Nama Undangan</label>
-            <input id="undangan-nama" type="text" required value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              placeholder='Contoh: "Romeo & Juliet"'
-              className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm transition-all duration-200" />
-            <p className="text-xs text-slate-soft">Nama pasangan yang akan tertera di undangan digital Anda.</p>
+        
+        <form onSubmit={handleCreate} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Col: Name */}
+            <div className="space-y-2">
+              <label htmlFor="undangan-nama" className="block text-sm font-bold text-ink">
+                1. Nama Pasangan
+              </label>
+              <p className="text-xs text-slate-soft mb-2">Nama yang akan menjadi judul utama undangan digital Anda.</p>
+              <input id="undangan-nama" type="text" required value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                placeholder='Contoh: "Romeo & Juliet"'
+                className="input-pastel w-full px-4 py-3.5 rounded-xl border-2 border-cream-200 bg-cream-50 text-ink text-base transition-all duration-200 hover:border-cream-300 focus:bg-white" />
+            </div>
+
+            {/* Right Col: Template */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-ink">
+                2. Desain Template
+              </label>
+              <p className="text-xs text-slate-soft mb-2">Pilih visual yang sesuai dengan tema pernikahan Anda.</p>
+              
+              {selectedTemplate && selectedTemplateData ? (
+                <div className="border-2 border-blush-200 bg-white rounded-xl p-3 relative group transition-all hover:border-blush-300 hover:shadow-md cursor-pointer"
+                  onClick={() => setShowPicker(true)}>
+                  <div className="flex items-center gap-4">
+                    {selectedTemplateData.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={selectedTemplateData.thumbnail} alt="" className="w-14 h-14 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-lavender-200 to-blush-200 flex items-center justify-center">
+                        <LayoutGrid className="text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="font-bold text-ink">{selectedTemplateData.name_template}</p>
+                      <p className="text-xs text-slate-soft mt-0.5">{selectedTemplate}</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-blush-50 text-blush-500 flex items-center justify-center group-hover:bg-blush-100 transition-colors">
+                      <Edit2 size={14} />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setShowPicker(true)}
+                  className="w-full px-4 py-3.5 rounded-xl border-2 border-dashed border-cream-300 bg-cream-50 hover:bg-cream-100 hover:border-blush-300 transition-all duration-200 flex items-center justify-between group">
+                  <span className="text-slate-soft font-medium flex items-center gap-2">
+                    <LayoutGrid size={18} className="text-blush-400 group-hover:text-blush-500 transition-colors" />
+                    Klik untuk pilih template
+                  </span>
+                  <div className="bg-white rounded-full p-1 shadow-sm text-slate-soft group-hover:text-blush-500 transition-colors">
+                    <Plus size={16} />
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="undangan-template" className="block text-sm font-medium text-ink-muted">Pilih Template</label>
-            {templates.length > 0 ? (
-              <select id="undangan-template" required value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm transition-all duration-200">
-                <option value="">-- Pilih template --</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.template}>
-                    {t.name_template} — {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(t.effective_price)}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input id="undangan-template" type="text" required value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                placeholder='Contoh: "template-1"'
-                className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm transition-all duration-200" />
-            )}
-            <p className="text-xs text-slate-soft">Template menentukan tampilan visual undangan Anda.</p>
-          </div>
+          {/* Alerts */}
           <AnimatePresence>
             {createAlert.type && (
-              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${createAlert.type === "success" ? "bg-mint-100 text-mint-500 border border-mint-200" : "bg-red-50 text-red-500 border border-red-100"}`}>
-                {createAlert.type === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
-                {createAlert.message}
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden">
+                <div className={`flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-medium ${createAlert.type === "success" ? "bg-mint-50 text-mint-700 border border-mint-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                  <div className={`p-1 rounded-full ${createAlert.type === "success" ? "bg-mint-100" : "bg-red-100"}`}>
+                    {createAlert.type === "success" ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                  </div>
+                  <p>{createAlert.message}</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
-          <div className="flex justify-end">
+
+          {/* Submit */}
+          <div className="pt-2 border-t border-cream-100 flex justify-end">
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               id="create-undangan-btn" type="submit" disabled={creating || !nama.trim() || !selectedTemplate}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 cursor-pointer"
+              className="flex items-center gap-2 px-8 py-3.5 rounded-xl text-base font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
               style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-              {creating ? <><Loader2 size={15} className="animate-spin" />Membuat…</> : <><Plus size={15} />Buat Undangan</>}
+              {creating ? <><Loader2 size={20} className="animate-spin" />Memproses…</> : <><Sparkles size={20} />Buat Undangan Sekarang</>}
             </motion.button>
           </div>
         </form>
       </motion.div>
 
+      {/* List */}
       <div>
-        <motion.h2 initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-          className="text-sm font-semibold text-slate-soft uppercase tracking-wider mb-4">
-          Undangan Anda ({undanganList.length})
-        </motion.h2>
+        <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+          className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-ink">Undangan Anda <span className="text-slate-soft font-normal text-sm ml-1">({undanganList.length})</span></h2>
+        </motion.div>
+        
         {listLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-blush-400" />
+          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-cream-100">
+            <Loader2 size={32} className="animate-spin text-blush-400 mb-3" />
+            <p className="text-slate-soft font-medium">Memuat data undangan...</p>
           </div>
         ) : listError ? (
-          <div className="text-center py-10 bg-white rounded-2xl shadow-card">
-            <AlertTriangle size={22} className="text-red-400 mx-auto mb-2" />
-            <p className="text-red-400 text-sm">{listError}</p>
-            <button onClick={fetchList} className="text-blush-500 text-sm underline mt-2">Coba lagi</button>
+          <div className="text-center py-12 bg-white rounded-3xl shadow-card border border-red-100">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={28} className="text-red-400" />
+            </div>
+            <p className="text-red-500 font-medium mb-2">{listError}</p>
+            <button onClick={fetchList} className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">Coba lagi</button>
           </div>
         ) : undanganList.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-14 bg-white rounded-2xl shadow-card">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4"
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20 bg-white rounded-3xl shadow-card border border-cream-100">
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-md"
               style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
-              <Mail size={26} strokeWidth={1.5} />
+              <Mail size={36} strokeWidth={1.5} />
             </div>
-            <p className="font-semibold text-ink">Belum ada undangan</p>
-            <p className="text-sm text-slate-soft mt-1">Buat undangan pertama Anda di atas.</p>
+            <h3 className="text-xl font-bold text-ink mb-2">Belum Ada Undangan</h3>
+            <p className="text-slate-soft max-w-sm mx-auto">Anda belum membuat undangan digital. Mulai dengan mengisi form di atas untuk membuat undangan pertama Anda!</p>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {undanganList.map((u, i) => (
               <UndanganCard key={u.id} undangan={u} index={i} token={token!} templates={templates} onRefresh={fetchList} />
             ))}
           </div>
         )}
       </div>
+
+      {/* Global Modals */}
+      <AnimatePresence>
+        {showPicker && (
+          <TemplatePickerModal 
+            templates={templates} 
+            selected={selectedTemplate} 
+            onSelect={setSelectedTemplate} 
+            onClose={() => setShowPicker(false)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

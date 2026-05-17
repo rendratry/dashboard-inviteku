@@ -81,3 +81,27 @@ export const useAdminStore = create<AdminAuthState>()(
     },
   ),
 );
+
+// ── Language Store ─────────────────────────────────────────────────────────
+
+type Language = "id" | "en";
+
+interface LanguageState {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  toggleLanguage: () => void;
+}
+
+export const useLanguageStore = create<LanguageState>()(
+  persist(
+    (set) => ({
+      language: "id", // Default to Indonesian
+      setLanguage: (lang) => set({ language: lang }),
+      toggleLanguage: () => set((state) => ({ language: state.language === "id" ? "en" : "id" })),
+    }),
+    {
+      name: "inviteku-language",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);

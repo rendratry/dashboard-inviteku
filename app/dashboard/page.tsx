@@ -5,7 +5,10 @@ import {
   Mail, Users, MessageCircle, Image, Palette,
   LayoutDashboard, ArrowRight,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/lib/store";
+import { getOverviewApi, type OverviewResponse } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n/dictionaries";
 import Link from "next/link";
 
 function StatCard({
@@ -65,9 +68,25 @@ function QuickAction({
 }
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const { t } = useTranslation();
+  
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+
+  useEffect(() => {
+    if (token) {
+      getOverviewApi(token)
+        .then((res) => {
+          if (res.data) setOverview(res.data);
+        })
+        .catch(console.error);
+    }
+  }, [token]);
+
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  let greeting = t.dashboard.welcome;
+  // If we had time specific greetings in translation, we could use them here.
+  // For now, let's just stick to the welcome text.
 
   return (
     <div className="space-y-8">
@@ -85,11 +104,11 @@ export default function DashboardPage() {
           <p className="text-white/80 text-sm font-medium mb-1">{greeting}</p>
           <h1 className="text-2xl font-bold mb-1">{user?.name ?? "Admin"}!</h1>
           <p className="text-white/70 text-sm max-w-sm">
-            Manage your digital wedding invitations from one elegant place.
+            {t.dashboard.welcomeSub}
           </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5">
             <span className="w-2 h-2 rounded-full bg-mint-300 animate-pulse" />
-            <span className="text-sm font-medium">Dashboard active</span>
+            <span className="text-sm font-medium">System Active</span>
           </div>
         </div>
       </motion.div>
@@ -102,13 +121,13 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
           className="text-sm font-semibold text-slate-soft uppercase tracking-wider mb-4"
         >
-          At a Glance
+          {t.common.overview}
         </motion.h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Undangan" value="—" icon={<Mail size={20} />} colorFrom="#ffc2cf" colorTo="#d9c8ff" delay={0.15} />
-          <StatCard title="Tamu" value="—" icon={<Users size={20} />} colorFrom="#d9c8ff" colorTo="#b3e3ff" delay={0.2} />
-          <StatCard title="Komentar" value="—" icon={<MessageCircle size={20} />} colorFrom="#b3e3ff" colorTo="#9af5db" delay={0.25} />
-          <StatCard title="Assets" value="—" icon={<Image size={20} />} colorFrom="#9af5db" colorTo="#ffc2cf" delay={0.3} />
+          <StatCard title={t.nav.createInvitation} value={overview ? overview.total_undangan.toString() : "—"} icon={<Mail size={20} />} colorFrom="#ffc2cf" colorTo="#d9c8ff" delay={0.15} />
+          <StatCard title={t.nav.guests} value={overview ? overview.total_tamu.toString() : "—"} icon={<Users size={20} />} colorFrom="#d9c8ff" colorTo="#b3e3ff" delay={0.2} />
+          <StatCard title={t.nav.comments} value={overview ? overview.total_komentar.toString() : "—"} icon={<MessageCircle size={20} />} colorFrom="#b3e3ff" colorTo="#9af5db" delay={0.25} />
+          <StatCard title={t.nav.assetsLibrary} value={overview ? overview.total_assets.toString() : "—"} icon={<Image size={20} />} colorFrom="#9af5db" colorTo="#ffc2cf" delay={0.3} />
         </div>
       </div>
 
@@ -123,13 +142,13 @@ export default function DashboardPage() {
           Quick Actions
         </motion.h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction href="/dashboard/profile" icon={<LayoutDashboard size={20} />} label="Profile"
+          <QuickAction href="/dashboard/profile" icon={<LayoutDashboard size={20} />} label={t.nav.profile}
             description="Update your name, email, and avatar photo." colorFrom="#ff9fb5" colorTo="#d9c8ff" delay={0.4} />
-          <QuickAction href="/dashboard/tamu" icon={<Users size={20} />} label="Tamu List"
+          <QuickAction href="/dashboard/tamu" icon={<Users size={20} />} label={t.nav.guests}
             description="Add, edit, and manage your wedding guests." colorFrom="#d9c8ff" colorTo="#80cfff" delay={0.45} />
-          <QuickAction href="/dashboard/assets" icon={<Palette size={20} />} label="Assets"
+          <QuickAction href="/dashboard/assets" icon={<Palette size={20} />} label={t.nav.invitationAssets}
             description="Configure all sections of your digital invitation." colorFrom="#80cfff" colorTo="#9af5db" delay={0.5} />
-          <QuickAction href="/dashboard/komentar" icon={<MessageCircle size={20} />} label="Komentar"
+          <QuickAction href="/dashboard/komentar" icon={<MessageCircle size={20} />} label={t.nav.comments}
             description="Moderate wishes and comments from your guests." colorFrom="#9af5db" colorTo="#ff9fb5" delay={0.55} />
         </div>
       </div>

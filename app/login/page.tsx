@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { Mail, Eye, EyeOff, AlertTriangle, Loader2, Globe } from "lucide-react";
+import { useAuthStore, useLanguageStore } from "@/lib/store";
 import { loginApi } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n/dictionaries";
 
 function FloatingBlob({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
@@ -20,6 +21,8 @@ function FloatingBlob({ className, delay = 0 }: { className: string; delay?: num
 export default function LoginPage() {
   const router = useRouter();
   const { setToken, isAuthenticated } = useAuthStore();
+  const { language, toggleLanguage } = useLanguageStore();
+  const { t } = useTranslation();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +67,17 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
         className="glass-card rounded-3xl p-8 sm:p-10 w-full max-w-md shadow-2xl relative z-10"
       >
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-xl font-bold text-xs bg-white/50 text-slate-soft hover:bg-blush-50 hover:text-blush-600 transition-colors uppercase"
+            title="Toggle Language (EN/ID)"
+          >
+            <Globe size={14} />
+            {language}
+          </button>
+        </div>
+        
         {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
@@ -80,7 +94,7 @@ export default function LoginPage() {
             transition={{ delay: 0.3 }}
             className="text-2xl font-bold text-ink mb-1"
           >
-            Welcome back
+            {t.auth.loginTitle}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -88,7 +102,7 @@ export default function LoginPage() {
             transition={{ delay: 0.35 }}
             className="text-sm text-slate-soft"
           >
-            Sign in to your dashboard
+            {t.auth.loginSubtitle}
           </motion.p>
         </div>
 
@@ -103,7 +117,7 @@ export default function LoginPage() {
           {/* Identifier */}
           <div className="space-y-1.5">
             <label htmlFor="login-email" className="block text-sm font-medium text-ink-muted">
-              Email or Username
+              {t.auth.emailLabel}
             </label>
             <input
               id="login-email"
@@ -112,7 +126,7 @@ export default function LoginPage() {
               required
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="you@example.com or your username"
+              placeholder={t.auth.emailPlaceholder}
               className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
             />
           </div>
@@ -120,7 +134,7 @@ export default function LoginPage() {
           {/* Password */}
           <div className="space-y-1.5">
             <label htmlFor="login-password" className="block text-sm font-medium text-ink-muted">
-              Password
+              {t.auth.passwordLabel}
             </label>
             <div className="relative">
               <input
@@ -130,7 +144,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t.auth.passwordPlaceholder}
                 className="input-pastel w-full px-4 py-3 pr-11 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
               />
               <button
@@ -175,10 +189,10 @@ export default function LoginPage() {
             {loading ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                Signing in...
+                {t.auth.loggingIn}
               </>
             ) : (
-              "Sign in →"
+              t.auth.loginButton
             )}
           </motion.button>
         </motion.form>
@@ -189,13 +203,13 @@ export default function LoginPage() {
           transition={{ delay: 0.55 }}
           className="mt-5 text-center text-sm text-slate-soft"
         >
-          Belum punya akun?{" "}
+          {t.auth.noAccount}{" "}
           <button
             id="go-to-register"
             onClick={() => router.push("/register")}
             className="font-semibold text-blush-500 hover:text-blush-400 transition-colors"
           >
-            Daftar di sini
+            {t.auth.registerLink}
           </button>
         </motion.p>
 

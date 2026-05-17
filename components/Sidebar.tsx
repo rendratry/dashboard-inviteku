@@ -9,19 +9,7 @@ import {
   ChevronLeft, LogOut, Library, CreditCard,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
-
-// ── Nav Items ──────────────────────────────────────────────────────────────
-
-const navItems = [
-  { href: "/dashboard", exact: true, label: "Overview", icon: <LayoutDashboard size={18} /> },
-  { href: "/dashboard/undangan", label: "Buat Undangan", icon: <Mail size={18} /> },
-  { href: "/dashboard/harga", label: "Harga", icon: <CreditCard size={18} /> },
-  { href: "/dashboard/profile", label: "Profile", icon: <User size={18} /> },
-  { href: "/dashboard/tamu", label: "Tamu (Guests)", icon: <Users size={18} /> },
-  { href: "/dashboard/assets", label: "Undangan Assets", icon: <PenSquare size={18} /> },
-  { href: "/dashboard/library", label: "Assets Library", icon: <Library size={18} /> },
-  { href: "/dashboard/komentar", label: "Komentar", icon: <MessageCircle size={18} /> },
-];
+import { useTranslation } from "@/lib/i18n/dictionaries";
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
 
@@ -34,6 +22,18 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user } = useAuthStore();
+  const { t } = useTranslation();
+
+  const navItems = [
+    { href: "/dashboard", exact: true, label: t.nav.dashboard, icon: <LayoutDashboard size={18} /> },
+    { href: "/dashboard/undangan", label: t.nav.createInvitation, icon: <Mail size={18} /> },
+    { href: "/dashboard/harga", label: t.nav.pricing, icon: <CreditCard size={18} /> },
+    { href: "/dashboard/tamu", label: t.nav.guests, icon: <Users size={18} /> },
+    { href: "/dashboard/assets", label: t.nav.invitationAssets, icon: <PenSquare size={18} /> },
+    { href: "/dashboard/library", label: t.nav.assetsLibrary, icon: <Library size={18} /> },
+    { href: "/dashboard/komentar", label: t.nav.comments, icon: <MessageCircle size={18} /> },
+    { href: "/dashboard/profile", label: t.nav.profile, icon: <User size={18} /> },
+  ];
 
   const handleLogout = () => { logout(); router.push("/login"); };
 
@@ -111,7 +111,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               exit={{ opacity: 0 }}
               className="px-2 py-1 text-xs font-semibold text-slate-soft/60 uppercase tracking-wider"
             >
-              Navigation
+              {t.common.navigation}
             </motion.p>
           )}
         </AnimatePresence>
@@ -177,7 +177,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 exit={{ opacity: 0, x: -6 }}
                 className="text-sm font-medium whitespace-nowrap"
               >
-                Logout
+                {t.common.logout}
               </motion.span>
             )}
           </AnimatePresence>

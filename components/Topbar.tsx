@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, User, Settings, LogOut, ChevronDown, Menu } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { Bell, User, Settings, LogOut, ChevronDown, Menu, Globe } from "lucide-react";
+import { useAuthStore, useLanguageStore } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n/dictionaries";
 import { UserAvatar } from "@/components/Sidebar";
 import { useRouter } from "next/navigation";
 
@@ -23,9 +24,11 @@ interface TopbarProps {
 
 export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
   const { user, logout } = useAuthStore();
+  const { language, toggleLanguage } = useLanguageStore();
+  const { t } = useTranslation();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const title = PAGE_TITLES[pathname] ?? "Dashboard";
+  const title = PAGE_TITLES[pathname] ?? t.common.overview;
 
   const handleLogout = () => { setDropdownOpen(false); logout(); router.push("/login"); };
 
@@ -53,6 +56,17 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
       </motion.h2>
 
       <div className="flex items-center gap-2">
+        {/* Language Toggle */}
+        <button
+          id="lang-toggle"
+          onClick={toggleLanguage}
+          className="flex items-center gap-1.5 px-3 h-9 rounded-xl font-bold text-xs bg-cream-50 text-slate-soft hover:bg-blush-50 hover:text-blush-600 border border-cream-200 transition-colors uppercase"
+          title="Toggle Language (EN/ID)"
+        >
+          <Globe size={14} />
+          {language}
+        </button>
+
         {/* Notification bell */}
         <button
           id="notif-bell"
@@ -107,12 +121,12 @@ export default function Topbar({ pathname, onMenuClick }: TopbarProps) {
                     </div>
                   )}
                   <div className="p-1.5 space-y-0.5">
-                    <DropdownItem id="dd-profile" icon={<User size={14} />} label="My Profile"
+                    <DropdownItem id="dd-profile" icon={<User size={14} />} label={t.nav.profile}
                       onClick={() => { setDropdownOpen(false); router.push("/dashboard/profile"); }} />
                     <DropdownItem id="dd-settings" icon={<Settings size={14} />} label="Settings"
                       onClick={() => { setDropdownOpen(false); router.push("/dashboard/profile"); }} />
                     <div className="h-px bg-cream-200 my-1" />
-                    <DropdownItem id="dd-logout" icon={<LogOut size={14} />} label="Sign out"
+                    <DropdownItem id="dd-logout" icon={<LogOut size={14} />} label={t.common.logout}
                       onClick={handleLogout} danger />
                   </div>
                 </motion.div>

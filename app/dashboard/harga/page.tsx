@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getTemplatePricesApi, type TemplatePrice } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n/dictionaries";
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -23,17 +24,27 @@ const CARD_GRADIENTS = [
   { from: "#9af5db", to: "#ffc2cf" },
 ];
 
-const DEFAULT_FEATURES = [
-  "Undangan digital eksklusif",
-  "Manajemen tamu unlimited",
-  "Upload foto & galeri",
-  "Musik latar pilihan",
-  "RSVP & kotak ucapan",
-];
-
 function PriceCard({ price, index }: { price: TemplatePrice; index: number }) {
   const grad = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
-  const features = price.features ?? DEFAULT_FEATURES;
+  const { t, lang } = useTranslation();
+  
+  // If API gives features, use it, otherwise use translated defaults
+  const defaultFeaturesID = [
+    "Undangan digital eksklusif",
+    "Manajemen tamu unlimited",
+    "Upload foto & galeri",
+    "Musik latar pilihan",
+    "RSVP & kotak ucapan",
+  ];
+  const defaultFeaturesEN = [
+    "Exclusive digital invitation",
+    "Unlimited guest management",
+    "Photo & gallery upload",
+    "Selected background music",
+    "RSVP & wishes box",
+  ];
+  const defaultFeatures = lang === "en" ? defaultFeaturesEN : defaultFeaturesID;
+  const features = price.features ?? defaultFeatures;
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -78,15 +89,12 @@ function PriceCard({ price, index }: { price: TemplatePrice; index: number }) {
             </li>
           ))}
         </ul>
-        <Link href="/dashboard/undangan">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold text-white text-center cursor-pointer"
-            style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}
-          >
-            Pilih Template Ini
-          </motion.div>
+        <Link
+          href="/dashboard/undangan"
+          className="w-full py-2.5 px-4 rounded-xl font-semibold text-white text-sm text-center transition-all duration-200 hover:opacity-90 block"
+          style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}
+        >
+          {t.pricing.selectBtn}
         </Link>
       </div>
     </motion.div>
@@ -97,6 +105,7 @@ export default function HargaPage() {
   const [prices, setPrices] = useState<TemplatePrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const load = () => {
     setLoading(true);
@@ -111,37 +120,47 @@ export default function HargaPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-          style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}
-        >
-          <CreditCard size={20} />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-ink">Harga Template</h1>
-          <p className="text-sm text-slate-soft">Pilih paket undangan digital yang sesuai untuk Anda</p>
-        </div>
-      </motion.div>
-
+      {/* Banner */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="relative overflow-hidden rounded-2xl p-5 text-white"
-        style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 50%, #80cfff 100%)" }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-3xl p-8 text-white mb-8"
+        style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #b3e3ff 100%)" }}
       >
-        <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/3 translate-x-1/3" />
-        <div className="relative flex items-center gap-3">
-          <Tag size={20} className="flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-sm">Satu kali bayar, undangan seumur hidup</p>
-            <p className="text-xs text-white/80 mt-0.5">
-              Setelah pembayaran diverifikasi, undangan Anda akan langsung dipublikasikan oleh tim kami.
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/4" />
+        <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold mb-2 text-ink">{t.pricing.bannerTitle}</h2>
+            <p className="text-ink/80 text-sm max-w-lg leading-relaxed">
+              {t.pricing.bannerSub}
             </p>
+          </div>
+          <div className="hidden sm:flex w-16 h-16 rounded-2xl bg-white/30 backdrop-blur-md items-center justify-center flex-shrink-0 text-ink">
+            <CreditCard size={32} strokeWidth={1.5} />
           </div>
         </div>
       </motion.div>
+
+      {/* Header */}
+      <div className="mb-8">
+        <motion.h1
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-2xl font-bold text-ink mb-1 flex items-center gap-2"
+        >
+          <Tag size={24} className="text-blush-400" />
+          {t.pricing.title}
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-sm text-slate-soft"
+        >
+          {t.pricing.subtitle}
+        </motion.p>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -165,14 +184,12 @@ export default function HargaPage() {
         </div>
       )}
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="text-center text-xs text-slate-soft/60 pb-4"
-      >
-        Pembayaran melalui transfer bank · Verifikasi oleh tim Inviteku dalam 1×24 jam
-      </motion.p>
+      <div className="mt-12 text-center">
+        <p className="text-xs font-medium text-slate-soft/80 inline-flex items-center gap-1.5 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
+          <CheckCircle2 size={14} className="text-mint-500" />
+          {t.pricing.footerInfo}
+        </p>
+      </div>
     </div>
   );
 }

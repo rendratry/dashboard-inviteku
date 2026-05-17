@@ -17,6 +17,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { registerApi, verifyOtpApi, resendOtpApi, RegisteredUser } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n/dictionaries";
+import { useLanguageStore } from "@/lib/store";
+import { Globe } from "lucide-react";
 
 // ── Floating decoration blob ──────────────────────────────────────────────
 function FloatingBlob({ className, delay = 0 }: { className: string; delay?: number }) {
@@ -91,6 +94,8 @@ function OtpInput({
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { language, toggleLanguage } = useLanguageStore();
 
   // Step 1: registration form
   const [step, setStep] = useState<"form" | "otp" | "success">("form");
@@ -212,6 +217,17 @@ export default function RegisterPage() {
             transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
             className="glass-card rounded-3xl p-8 sm:p-10 w-full max-w-md shadow-2xl relative z-10"
           >
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1.5 px-3 h-8 rounded-xl font-bold text-xs bg-white/50 text-slate-soft hover:bg-blush-50 hover:text-blush-600 transition-colors uppercase"
+                title="Toggle Language (EN/ID)"
+              >
+                <Globe size={14} />
+                {language}
+              </button>
+            </div>
+            
             {/* Header */}
             <div className="text-center mb-8">
               <motion.div
@@ -228,7 +244,7 @@ export default function RegisterPage() {
                 transition={{ delay: 0.25 }}
                 className="text-2xl font-bold text-ink mb-1"
               >
-                Buat Akun Baru
+                {t.auth.registerTitle}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 8 }}
@@ -236,7 +252,7 @@ export default function RegisterPage() {
                 transition={{ delay: 0.3 }}
                 className="text-sm text-slate-soft"
               >
-                Daftar sekarang
+                {t.auth.registerSubtitle}
               </motion.p>
             </div>
 
@@ -251,7 +267,7 @@ export default function RegisterPage() {
               {/* Name */}
               <div className="space-y-1.5">
                 <label htmlFor="register-name" className="block text-sm font-medium text-ink-muted">
-                  Nama Lengkap
+                  {t.auth.nameLabel}
                 </label>
                 <div className="relative">
                   <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-soft/60" />
@@ -262,7 +278,7 @@ export default function RegisterPage() {
                     autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nama lengkap Anda"
+                    placeholder={t.auth.namePlaceholder}
                     className="input-pastel w-full pl-10 pr-4 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
                   />
                 </div>
@@ -271,7 +287,7 @@ export default function RegisterPage() {
               {/* Username */}
               <div className="space-y-1.5">
                 <label htmlFor="register-username" className="block text-sm font-medium text-ink-muted">
-                  Username
+                  {t.auth.usernameLabel}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-soft/60 text-sm font-medium">@</span>
@@ -282,7 +298,7 @@ export default function RegisterPage() {
                     autoComplete="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
-                    placeholder="username_anda"
+                    placeholder={t.auth.usernamePlaceholder}
                     className="input-pastel w-full pl-8 pr-4 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
                   />
                 </div>
@@ -291,7 +307,7 @@ export default function RegisterPage() {
               {/* Email */}
               <div className="space-y-1.5">
                 <label htmlFor="register-email" className="block text-sm font-medium text-ink-muted">
-                  Email
+                  {t.auth.emailLabel}
                 </label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-soft/60" />
@@ -302,7 +318,7 @@ export default function RegisterPage() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t.auth.emailPlaceholder}
                     className="input-pastel w-full pl-10 pr-4 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
                   />
                 </div>
@@ -311,7 +327,7 @@ export default function RegisterPage() {
               {/* Password */}
               <div className="space-y-1.5">
                 <label htmlFor="register-password" className="block text-sm font-medium text-ink-muted">
-                  Password
+                  {t.auth.passwordLabel}
                 </label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-soft/60" />
@@ -323,7 +339,7 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 karakter"
+                    placeholder={t.auth.passwordPlaceholder}
                     className="input-pastel w-full pl-10 pr-11 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
                   />
                   <button
@@ -371,10 +387,10 @@ export default function RegisterPage() {
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Mendaftar...
+                    {t.auth.registering}
                   </>
                 ) : (
-                  "Daftar Sekarang →"
+                  t.auth.registerButton
                 )}
               </motion.button>
             </motion.form>
@@ -386,13 +402,13 @@ export default function RegisterPage() {
               transition={{ delay: 0.5 }}
               className="mt-6 text-center text-sm text-slate-soft"
             >
-              Sudah punya akun?{" "}
+              {t.auth.hasAccount}{" "}
               <button
                 id="go-to-login"
                 onClick={() => router.push("/login")}
                 className="font-semibold text-blush-500 hover:text-blush-400 transition-colors"
               >
-                Masuk di sini
+                {t.auth.loginLink}
               </button>
             </motion.p>
           </motion.div>

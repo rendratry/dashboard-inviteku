@@ -167,8 +167,23 @@ export async function updateUserApi(token: string, name: string) {
   });
 }
 
-// ── Tamu (Guest) ───────────────────────────────────────────────────────────
+// ── Overview ───────────────────────────────────────────────────────────────
 
+export interface OverviewResponse {
+  total_undangan: number;
+  total_tamu: number;
+  total_komentar: number;
+  total_assets: number;
+}
+
+export async function getOverviewApi(token: string) {
+  return apiFetch<{ data: OverviewResponse; message?: string; status?: boolean }>("/user/overview", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+// ── Tamu (Guest) ───────────────────────────────────────────────────────────
 export async function getTamuApi(token: string, idUndangan: number | string) {
   return apiFetch<{ data: Tamu[] }>(`/get-tamu/${idUndangan}`, {
     method: "GET",
