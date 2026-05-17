@@ -70,10 +70,9 @@ export default function LoginPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}
+            className="inline-flex items-center justify-center w-48 mb-4"
           >
-            <Mail size={28} className="text-white" strokeWidth={1.5} />
+            <img src="/logo.png" alt="Inviteku Logo" className="w-full h-auto object-contain" />
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 8 }}
@@ -89,8 +88,7 @@ export default function LoginPage() {
             transition={{ delay: 0.35 }}
             className="text-sm text-slate-soft"
           >
-            Sign in to your{" "}
-            <span className="font-semibold text-blush-500">Inviteku</span> dashboard
+            Sign in to your dashboard
           </motion.p>
         </div>
 
@@ -207,7 +205,7 @@ export default function LoginPage() {
           transition={{ delay: 0.6 }}
           className="mt-3 text-center text-xs text-slate-soft/70"
         >
-          Inviteku Admin • Digital Wedding Invitations
+          Inviteku Dashboard • Digital Wedding Invitations
         </motion.p>
       </motion.div>
     </div>

@@ -218,10 +218,9 @@ export default function RegisterPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 20 }}
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-                style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}
+                className="inline-flex items-center justify-center w-48 mb-4"
               >
-                <User size={28} className="text-white" strokeWidth={1.5} />
+                <img src="/logo.png" alt="Inviteku Logo" className="w-full h-auto object-contain" />
               </motion.div>
               <motion.h1
                 initial={{ opacity: 0, y: 8 }}
@@ -237,8 +236,7 @@ export default function RegisterPage() {
                 transition={{ delay: 0.3 }}
                 className="text-sm text-slate-soft"
               >
-                Daftar ke{" "}
-                <span className="font-semibold text-blush-500">Inviteku</span> sekarang
+                Daftar sekarang
               </motion.p>
             </div>
 

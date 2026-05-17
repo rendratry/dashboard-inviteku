@@ -63,14 +63,13 @@ export default function AdminLoginPage() {
           <motion.div
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}
+            className="inline-flex items-center justify-center w-48 mb-4"
           >
-            <ShieldCheck size={28} className="text-white" strokeWidth={1.5} />
+            <img src="/logo.png" alt="Inviteku Admin Logo" className="w-full h-auto object-contain" />
           </motion.div>
           <h1 className="text-2xl font-bold text-ink mb-1">Admin Portal</h1>
           <p className="text-sm text-slate-soft">
-            Masuk ke <span className="font-semibold text-lavender-500">Inviteku Admin</span>
+            Masuk ke Admin Portal
           </p>
         </div>
 

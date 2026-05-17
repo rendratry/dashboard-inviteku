@@ -55,27 +55,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="h-16 flex items-center px-4 border-b border-blush-100/50 flex-shrink-0">
         <motion.div
           animate={{ justifyContent: collapsed ? "center" : "flex-start" }}
-          className="flex items-center gap-3 w-full"
+          className="flex items-center w-full"
         >
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}
+            className={`flex-shrink-0 transition-all duration-300 ${collapsed ? "w-10" : "w-32"}`}
           >
-            <Mail size={18} className="text-white" strokeWidth={1.5} />
+            <img src={collapsed ? "/logo-icon.png" : "/logo.png"} alt="Inviteku Logo" className="w-full h-auto object-contain" />
           </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.2 }}
-                className="font-bold text-ink text-base whitespace-nowrap"
-              >
-                Inviteku
-              </motion.span>
-            )}
-          </AnimatePresence>
         </motion.div>
 
         {/* Collapse toggle */}

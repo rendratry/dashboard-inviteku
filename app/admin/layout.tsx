@@ -77,20 +77,10 @@ function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: (
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-lavender-100/50 flex-shrink-0">
         <motion.div animate={{ justifyContent: collapsed ? "center" : "flex-start" }}
-          className="flex items-center gap-3 w-full">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
-            <ShieldCheck size={18} className="text-white" strokeWidth={1.5} />
+          className="flex items-center w-full">
+          <div className={`flex-shrink-0 transition-all duration-300 ${collapsed ? "w-10" : "w-32"}`}>
+            <img src={collapsed ? "/logo-icon.png" : "/logo.png"} alt="Inviteku Admin" className="w-full h-auto object-contain" />
           </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}
-                className="font-bold text-ink text-base whitespace-nowrap">
-                Admin Panel
-              </motion.span>
-            )}
-          </AnimatePresence>
         </motion.div>
         <button id="admin-sidebar-toggle" onClick={onToggle}
           className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-soft hover:bg-lavender-100 hover:text-lavender-500 transition-all ${collapsed ? "mx-auto" : "ml-auto"}`}>
