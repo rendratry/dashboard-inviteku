@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import {
-  adminGetPendingPaymentsApi, adminGetAllPaymentsApi,
+  adminGetPendingPaymentsApi, adminGetApprovedPaymentsApi, adminGetRejectedPaymentsApi, adminGetAllPaymentsApi,
   adminVerifyPaymentApi, adminUpdateUndanganApi,
   getTemplatePricesApi,
   type AdminPayment, type TemplatePrice,
@@ -304,12 +304,14 @@ function PaymentTable({
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 
-type Tab = "pending" | "all";
+type Tab = "pending" | "approved" | "rejected" | "all";
 
 export default function AdminPaymentsPage() {
   const { adminToken } = useAdminStore();
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [pendingPayments, setPendingPayments] = useState<AdminPayment[]>([]);
+  const [approvedPayments, setApprovedPayments] = useState<AdminPayment[]>([]);
+  const [rejectedPayments, setRejectedPayments] = useState<AdminPayment[]>([]);
   const [allPayments, setAllPayments] = useState<AdminPayment[]>([]);
   const [templates, setTemplates] = useState<TemplatePrice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,12 +321,16 @@ export default function AdminPaymentsPage() {
     if (!adminToken) return;
     setLoading(true); setError(null);
     try {
-      const [pendRes, allRes, tplRes] = await Promise.all([
+      const [pendRes, appRes, rejRes, allRes, tplRes] = await Promise.all([
         adminGetPendingPaymentsApi(adminToken),
+        adminGetApprovedPaymentsApi(adminToken),
+        adminGetRejectedPaymentsApi(adminToken),
         adminGetAllPaymentsApi(adminToken),
         getTemplatePricesApi(),
       ]);
       setPendingPayments(Array.isArray(pendRes.data) ? pendRes.data : []);
+      setApprovedPayments(Array.isArray(appRes.data) ? appRes.data : []);
+      setRejectedPayments(Array.isArray(rejRes.data) ? rejRes.data : []);
       setAllPayments(Array.isArray(allRes.data) ? allRes.data : []);
       setTemplates(Array.isArray(tplRes.data) ? tplRes.data : []);
     } catch (e: unknown) {
@@ -336,6 +342,8 @@ export default function AdminPaymentsPage() {
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: "pending", label: "Pending", count: pendingPayments.length },
+    { key: "approved", label: "Approved", count: approvedPayments.length },
+    { key: "rejected", label: "Rejected", count: rejectedPayments.length },
     { key: "all", label: "Semua Pembayaran", count: allPayments.length },
   ];
 
@@ -364,8 +372,8 @@ export default function AdminPaymentsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Pending", value: pendingPayments.length, color: "#ffb06a" },
-          { label: "Approved", value: allPayments.filter(p => p.status === "approved").length, color: "#14b894" },
-          { label: "Rejected", value: allPayments.filter(p => p.status === "rejected").length, color: "#f95c7e" },
+          { label: "Approved", value: approvedPayments.length, color: "#14b894" },
+          { label: "Rejected", value: rejectedPayments.length, color: "#f95c7e" },
           { label: "Total", value: allPayments.length, color: "#8b5cf6" },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -415,7 +423,12 @@ export default function AdminPaymentsPage() {
           <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
             <PaymentTable
-              payments={activeTab === "pending" ? pendingPayments : allPayments}
+              payments={
+                activeTab === "pending" ? pendingPayments :
+                activeTab === "approved" ? approvedPayments :
+                activeTab === "rejected" ? rejectedPayments :
+                allPayments
+              }
               showActions={activeTab === "pending"}
               adminToken={adminToken!}
               templates={templates}

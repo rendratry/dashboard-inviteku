@@ -527,12 +527,14 @@ export default function TamuPage() {
           <UndanganSelector list={undanganList} loading={undanganLoading}
             selected={selectedUndangan}
             onSelect={(u) => { setSelectedUndangan(u); setGuests([]); }} />
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            id="add-guest-btn" onClick={() => setAddOpen(true)} disabled={!selectedUndangan}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 cursor-pointer"
-            style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-            <Plus size={16} /> Tambah Tamu
-          </motion.button>
+          {selectedUndangan?.is_published && (
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              id="add-guest-btn" onClick={() => setAddOpen(true)} disabled={!selectedUndangan}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+              <Plus size={16} /> Tambah Tamu
+            </motion.button>
+          )}
         </div>
       </motion.div>
 
@@ -565,7 +567,7 @@ export default function TamuPage() {
               <button onClick={fetchGuests} className="text-blush-500 text-sm underline mt-2">Retry</button>
             </div>
           ) : guests.length === 0 ? (
-            <EmptyState onAdd={() => setAddOpen(true)} undanganNama={selectedUndangan.nama} />
+            <EmptyState onAdd={() => setAddOpen(true)} undanganNama={selectedUndangan.nama} isPublished={selectedUndangan.is_published} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -661,7 +663,7 @@ export default function TamuPage() {
 
 // ── Empty State ────────────────────────────────────────────────────────────
 
-function EmptyState({ onAdd, undanganNama }: { onAdd: () => void; undanganNama: string }) {
+function EmptyState({ onAdd, undanganNama, isPublished }: { onAdd: () => void; undanganNama: string; isPublished?: boolean }) {
   return (
     <div className="p-16 flex flex-col items-center text-center">
       <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-4"
@@ -672,12 +674,20 @@ function EmptyState({ onAdd, undanganNama }: { onAdd: () => void; undanganNama: 
       <p className="text-sm text-slate-soft mb-1">
         Untuk undangan <span className="font-medium text-ink">{undanganNama}</span>
       </p>
-      <p className="text-sm text-slate-soft mb-5">Mulai tambahkan daftar tamu undangan Anda.</p>
-      <button id="empty-add-guest" onClick={onAdd}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer"
-        style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-        <Plus size={15} /> Tambah Tamu Pertama
-      </button>
+      {isPublished ? (
+        <>
+          <p className="text-sm text-slate-soft mb-5">Mulai tambahkan daftar tamu undangan Anda.</p>
+          <button id="empty-add-guest" onClick={onAdd}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer"
+            style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+            <Plus size={15} /> Tambah Tamu Pertama
+          </button>
+        </>
+      ) : (
+        <p className="text-sm text-slate-soft mt-2">
+          Silakan publish undangan Anda terlebih dahulu untuk dapat menambahkan tamu.
+        </p>
+      )}
     </div>
   );
 }

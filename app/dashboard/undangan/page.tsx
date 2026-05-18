@@ -139,7 +139,14 @@ function TemplatePickerModal({
                     
                     <div className="p-5 flex flex-col flex-1">
                       <div className="mb-4">
-                        <p className="text-2xl font-extrabold text-ink">{formatRupiah(price.effective_price)}</p>
+                        {price.is_disc && price.price_disc && price.price_disc > 0 ? (
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-extrabold text-ink">{formatRupiah(price.price_disc)}</p>
+                            <p className="text-sm line-through text-slate-soft">{formatRupiah(price.price ?? 0)}</p>
+                          </div>
+                        ) : (
+                          <p className="text-2xl font-extrabold text-ink">{formatRupiah(price.price ?? price.effective_price)}</p>
+                        )}
                         {price.description && (
                           <p className="text-xs text-slate-soft mt-1 leading-relaxed line-clamp-2">{price.description}</p>
                         )}
@@ -356,7 +363,18 @@ function CheckoutModal({
           <div>
             <p className="text-xs text-slate-soft mb-0.5">Template {undangan.template}</p>
             <p className="font-semibold text-ink text-sm">{templatePrice?.name_template ?? "—"}</p>
-            {templatePrice && <p className="text-lg font-extrabold text-blush-500 mt-0.5">{formatRupiah(templatePrice.effective_price)}</p>}
+            {templatePrice && (
+              <div className="flex items-center gap-2 mt-0.5">
+                {templatePrice.is_disc && templatePrice.price_disc && templatePrice.price_disc > 0 ? (
+                  <>
+                    <p className="text-lg font-extrabold text-blush-500">{formatRupiah(templatePrice.price_disc)}</p>
+                    <p className="text-xs line-through text-slate-soft">{formatRupiah(templatePrice.price ?? 0)}</p>
+                  </>
+                ) : (
+                  <p className="text-lg font-extrabold text-blush-500">{formatRupiah(templatePrice.price ?? templatePrice.effective_price)}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

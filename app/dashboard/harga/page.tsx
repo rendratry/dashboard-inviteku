@@ -76,7 +76,14 @@ function PriceCard({ price, index }: { price: TemplatePrice; index: number }) {
           </div>
         </div>
         <div className="mb-5">
-          <p className="text-3xl font-extrabold text-ink">{formatRupiah(price.effective_price)}</p>
+          {price.is_disc && price.price_disc && price.price_disc > 0 ? (
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold text-ink">{formatRupiah(price.price_disc)}</p>
+              <p className="text-sm line-through text-slate-soft">{formatRupiah(price.price ?? 0)}</p>
+            </div>
+          ) : (
+            <p className="text-3xl font-extrabold text-ink">{formatRupiah(price.price ?? price.effective_price)}</p>
+          )}
           {price.description && (
             <p className="text-xs text-slate-soft mt-1 leading-relaxed">{price.description}</p>
           )}

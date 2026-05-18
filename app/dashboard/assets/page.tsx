@@ -727,13 +727,12 @@ function GiftTab({ token, idUndangan }: { token: string; idUndangan: number }) {
   useEffect(() => {
     setLoading(true); setData([]);
     Promise.all([
-      getAssetGiftApi(token, idUndangan),
-      getPaymentLogosApi()
+      getAssetGiftApi(token, idUndangan).catch(() => ({ data: [] })),
+      getPaymentLogosApi().catch(() => ({ data: [] }))
     ])
       .then(([rGift, rLogos]) => {
-        const arr = Array.isArray(rGift.data) ? rGift.data : [];
-        setData(arr);
-        setLogos(Array.isArray(rLogos.data) ? rLogos.data : []);
+        setData(Array.isArray(rGift?.data) ? rGift.data : []);
+        setLogos(Array.isArray(rLogos?.data) ? rLogos.data : []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

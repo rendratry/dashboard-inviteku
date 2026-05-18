@@ -6,7 +6,7 @@ import {
   Sparkles, CheckCircle2, AlertTriangle, Loader2, X, Plus, Edit2, RefreshCw, Image as ImageIcon, Trash2,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
-import { getTemplatePricesApi, adminCreateTemplateApi, adminUpdateTemplateApi, type TemplatePrice } from "@/lib/api";
+import { adminGetTemplatesApi, adminCreateTemplateApi, adminUpdateTemplateApi, type TemplatePrice } from "@/lib/api";
 
 // ── File Upload Helper ─────────────────────────────────────────────────────
 
@@ -69,6 +69,10 @@ function TemplateFormModal({
     template: template?.template ?? "",
     name_template: template?.name_template ?? "",
     accent_color: template?.accent_color ?? "",
+    price: template?.price ?? 0,
+    price_disc: template?.price_disc ?? 0,
+    is_disc: template?.is_disc ?? false,
+    is_published: template?.is_published ?? false,
   });
   const [files, setFiles] = useState<Record<string, File | null>>({
     thumbnail: null, background: null,
@@ -86,14 +90,18 @@ function TemplateFormModal({
       fd.append("template", formData.template);
       fd.append("name_template", formData.name_template);
       fd.append("accent_color", formData.accent_color);
+      fd.append("price", String(formData.price));
+      fd.append("price_disc", String(formData.price_disc));
+      fd.append("is_disc", String(formData.is_disc));
+      fd.append("is_published", String(formData.is_published));
       
       // Append files if they exist
       Object.entries(files).forEach(([key, file]) => {
         if (file) fd.append(key, file);
       });
 
-      if (isEdit) {
-        await adminUpdateTemplateApi(adminToken, fd);
+      if (isEdit && template?.id) {
+        await adminUpdateTemplateApi(adminToken, template.id, fd);
       } else {
         await adminCreateTemplateApi(adminToken, fd);
       }
@@ -143,6 +151,33 @@ function TemplateFormModal({
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-cream-200 pt-6">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-ink-muted">Harga Utama (IDR) <span className="text-red-400">*</span></label>
+                <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} required
+                  placeholder="Misal: 150000"
+                  className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-ink-muted">Harga Diskon (IDR)</label>
+                <input type="number" value={formData.price_disc} onChange={e => setFormData({ ...formData, price_disc: Number(e.target.value) })}
+                  placeholder="Misal: 99000"
+                  className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+              </div>
+              <div className="space-y-1.5 flex flex-col justify-end pb-3 gap-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink-muted cursor-pointer select-none">
+                  <input type="checkbox" checked={formData.is_disc} onChange={e => setFormData({ ...formData, is_disc: e.target.checked })}
+                    className="w-4 h-4 rounded border-cream-300 text-blush-500 focus:ring-blush-400" />
+                  Aktifkan Diskon
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-ink-muted cursor-pointer select-none">
+                  <input type="checkbox" checked={formData.is_published} onChange={e => setFormData({ ...formData, is_published: e.target.checked })}
+                    className="w-4 h-4 rounded border-cream-300 text-blush-500 focus:ring-blush-400" />
+                  Publish Template (Bisa Dipakai User)
+                </label>
+              </div>
+            </div>
+
             <div className="border-t border-cream-200 pt-6">
               <h3 className="font-semibold text-ink mb-4 text-sm uppercase tracking-wider">Aset Gambar</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -189,14 +224,15 @@ export default function AdminTemplatesPage() {
   const [modalTarget, setModalTarget] = useState<TemplatePrice | null | "new">(null);
 
   const fetchTemplates = useCallback(async () => {
+    if (!adminToken) return;
     setLoading(true); setError(null);
     try {
-      const res = await getTemplatePricesApi();
+      const res = await adminGetTemplatesApi(adminToken);
       setTemplates(Array.isArray(res.data) ? res.data : []);
     } catch (e: unknown) {
       setError((e as { message?: string })?.message ?? "Gagal memuat template.");
     } finally { setLoading(false); }
-  }, []);
+  }, [adminToken]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
@@ -263,6 +299,15 @@ export default function AdminTemplatesPage() {
                 ) : (
                   <ImageIcon size={32} className="text-cream-300" />
                 )}
+                <div className="absolute top-2 left-2 flex gap-1">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
+                    tpl.is_published 
+                      ? "bg-mint-500 text-white" 
+                      : "bg-amber-500 text-white"
+                  }`}>
+                    {tpl.is_published ? "Published" : "Draft"}
+                  </span>
+                </div>
                 <div className="absolute top-2 right-2 flex gap-1">
                   <button onClick={() => setModalTarget(tpl)} className="p-2 bg-white/90 backdrop-blur rounded-lg text-ink hover:text-blush-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                     <Edit2 size={14} />
@@ -271,13 +316,26 @@ export default function AdminTemplatesPage() {
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-ink truncate">{tpl.name_template}</h3>
                     <p className="text-xs font-mono text-slate-soft/80">{tpl.template}</p>
                   </div>
-                  <span className="text-xs font-bold text-lavender-600 bg-lavender-50 px-2 py-1 rounded-md">
-                    {new Intl.NumberFormat("id-ID", { notation: "compact" }).format(tpl.effective_price)}
-                  </span>
+                  <div className="text-right flex flex-col items-end">
+                    {tpl.is_disc && tpl.price_disc && tpl.price_disc > 0 ? (
+                      <>
+                        <span className="text-[10px] line-through text-slate-soft">
+                          Rp{new Intl.NumberFormat("id-ID").format(tpl.price ?? 0)}
+                        </span>
+                        <span className="text-xs font-bold text-mint-500 bg-mint-50 px-2 py-0.5 rounded-md mt-0.5">
+                          Rp{new Intl.NumberFormat("id-ID").format(tpl.price_disc)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-lavender-600 bg-lavender-50 px-2 py-1 rounded-md">
+                        Rp{new Intl.NumberFormat("id-ID").format(tpl.price ?? tpl.effective_price)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

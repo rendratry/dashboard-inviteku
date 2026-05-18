@@ -482,6 +482,20 @@ export async function adminGetPendingPaymentsApi(adminToken: string) {
   });
 }
 
+export async function adminGetApprovedPaymentsApi(adminToken: string) {
+  return apiFetch<{ data: AdminPayment[] }>("/admin/approved-payments", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminGetRejectedPaymentsApi(adminToken: string) {
+  return apiFetch<{ data: AdminPayment[] }>("/admin/rejected-payments", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
 export async function adminGetAllPaymentsApi(adminToken: string) {
   return apiFetch<{ data: AdminPayment[] }>("/admin/all-payments", {
     method: "GET",
@@ -519,18 +533,32 @@ export async function adminUpdateUndanganApi(
 }
 
 export async function adminCreateTemplateApi(adminToken: string, formData: FormData) {
-  return apiFetch<ApiResponse>("/template-assets", {
+  return apiFetch<ApiResponse>("/admin/template-assets", {
     method: "POST",
     headers: authMultipartHeaders(adminToken),
     body: formData,
   });
 }
 
-export async function adminUpdateTemplateApi(adminToken: string, formData: FormData) {
-  return apiFetch<ApiResponse>("/template-assets", {
+export async function adminUpdateTemplateApi(adminToken: string, id: number | string, formData: FormData) {
+  return apiFetch<ApiResponse>(`/admin/template-assets/${id}`, {
     method: "PUT",
     headers: authMultipartHeaders(adminToken),
     body: formData,
+  });
+}
+
+export async function adminGetTemplatesApi(adminToken: string) {
+  return apiFetch<{ data: TemplatePrice[] }>("/admin/template-assets", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminGetTemplateByIdApi(adminToken: string, id: number | string) {
+  return apiFetch<{ data: TemplatePrice }>(`/admin/template-assets/${id}`, {
+    method: "GET",
+    headers: adminHeaders(adminToken),
   });
 }
 
@@ -631,6 +659,10 @@ export interface TemplatePrice {
   bottom_left?: string;
   description?: string;
   features?: string[];
+  price?: number;
+  price_disc?: number;
+  is_disc?: boolean;
+  is_published?: boolean;
 }
 
 export type PaymentStatusValue = "draft" | "pending" | "approved" | "rejected";
