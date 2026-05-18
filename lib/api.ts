@@ -77,6 +77,8 @@ async function apiFetch<T>(
         if (!msg.includes("http 4") && !msg.includes("http 5") && !msg.includes("sqlstate")) {
           errorMessage = body.message;
         }
+      } else if (body.data && body.data.error && typeof body.data.error === "string") {
+        errorMessage = body.data.error;
       }
     } catch {
       // swallow JSON parse errors and use fallback
@@ -434,6 +436,15 @@ export async function requestPublishApi(token: string, formData: FormData) {
   });
 }
 
+// ── Preview Token ──────────────────────────────────────────────────────────
+
+export async function generatePreviewTokenApi(token: string, idUndangan: number | string) {
+  return apiFetch<{ data: { preview_token: string } }>(`/generate-preview/${idUndangan}`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 // ── Payment Status ─────────────────────────────────────────────────────────
 
 export async function getPaymentStatusApi(
@@ -473,6 +484,13 @@ export async function adminGetPendingPaymentsApi(adminToken: string) {
 
 export async function adminGetAllPaymentsApi(adminToken: string) {
   return apiFetch<{ data: AdminPayment[] }>("/admin/all-payments", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminGetAllUndanganApi(adminToken: string) {
+  return apiFetch<{ data: AdminUndangan[] }>("/admin/undangan", {
     method: "GET",
     headers: adminHeaders(adminToken),
   });
@@ -586,6 +604,17 @@ export interface Undangan {
   exp?: string;
   id_user?: string;
   is_published?: boolean;
+}
+
+export interface AdminUndangan extends Undangan {
+  opening_assets?: any;
+  mempelai_assets?: any;
+  akad_assets?: any;
+  resepsi_assets?: any;
+  gallery_assets?: any;
+  maps_assets?: any;
+  gift_accounts?: any[];
+  backsound_assets?: any;
 }
 
 export interface TemplatePrice {

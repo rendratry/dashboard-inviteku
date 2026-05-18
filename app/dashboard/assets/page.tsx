@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Users, Gem, PartyPopper, Image, MapPin, Gift,
   Palette, Paperclip, CheckCircle2, AlertTriangle, Loader2,
-  ChevronDown, Music, X, Search, Library, Plus, Trash2, CreditCard
+  ChevronDown, Music, X, Search, Library, Plus, Trash2, CreditCard, Eye
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
@@ -19,6 +19,7 @@ import {
   getAssetGiftApi, updateAssetGiftApi,
   getAssetBacksoundApi, updateAssetBacksoundApi,
   getUndanganApi, getLibraryAssetsApi, getPaymentLogosApi,
+  generatePreviewTokenApi,
   type AssetOpening, type AssetMempelai, type AssetAkad,
   type AssetResepsi, type AssetGallery, type AssetMaps, type AssetGift,
   type AssetBacksound,
@@ -938,6 +939,22 @@ export default function AssetsPage() {
   const [undanganList, setUndanganList] = useState<Undangan[]>([]);
   const [undanganLoading, setUndanganLoading] = useState(true);
   const [selectedUndangan, setSelectedUndangan] = useState<Undangan | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreview = async () => {
+    if (!token || !selectedUndangan || previewLoading) return;
+    setPreviewLoading(true);
+    try {
+      const res = await generatePreviewTokenApi(token, selectedUndangan.id);
+      if (res.data?.preview_token) {
+        window.open(`https://inviteku.com/undangan/preview?access=${res.data.preview_token}`, '_blank');
+      }
+    } catch (e: unknown) {
+      alert((e as { message?: string })?.message ?? "Gagal memuat preview.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const fetchUndangan = useCallback(async () => {
     if (!token) return;
@@ -973,12 +990,23 @@ export default function AssetsPage() {
         </div>
 
         {/* Undangan dropdown */}
-        <UndanganSelector
-          list={undanganList}
-          loading={undanganLoading}
-          selected={selectedUndangan}
-          onSelect={(u) => { setSelectedUndangan(u); setActiveTab("opening"); }}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <UndanganSelector
+            list={undanganList}
+            loading={undanganLoading}
+            selected={selectedUndangan}
+            onSelect={(u) => { setSelectedUndangan(u); setActiveTab("opening"); }}
+          />
+          {selectedUndangan && (
+            <button
+              onClick={handlePreview}
+              disabled={previewLoading}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-mint-200 text-mint-600 bg-mint-50 hover:bg-mint-100 transition-colors disabled:opacity-50"
+            >
+              {previewLoading ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />} Preview
+            </button>
+          )}
+        </div>
       </motion.div>
 
       {/* No undangan */}

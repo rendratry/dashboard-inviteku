@@ -11,6 +11,7 @@ import { useAuthStore } from "@/lib/store";
 import {
   createUndanganApi, getUndanganApi, getPaymentStatusApi,
   updateUndanganApi, requestPublishApi, getTemplatePricesApi,
+  generatePreviewTokenApi,
   type Undangan, type PaymentStatus, type TemplatePrice,
 } from "@/lib/api";
 
@@ -300,6 +301,7 @@ function CheckoutModal({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [customKey, setCustomKey] = useState("");
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -315,11 +317,15 @@ function CheckoutModal({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !customKey.trim()) {
+      setErr("Silakan isi Key Undangan dan upload Bukti Transfer.");
+      return;
+    }
     setUploading(true); setErr(null);
     try {
       const fd = new FormData();
       fd.append("id_undangan", String(undangan.id));
+      fd.append("key", customKey.trim());
       fd.append("bukti_transfer", file);
       await requestPublishApi(token, fd);
       onSuccess();
@@ -359,14 +365,35 @@ function CheckoutModal({
           <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Instruksi Pembayaran</p>
           <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-4 space-y-2.5 text-sm">
             <div className="flex justify-between"><span className="text-slate-soft">Bank</span><span className="font-semibold text-ink">BCA</span></div>
-            <div className="flex justify-between"><span className="text-slate-soft">No. Rekening</span><span className="font-semibold text-ink font-mono text-base">1234567890</span></div>
-            <div className="flex justify-between"><span className="text-slate-soft">Atas Nama</span><span className="font-semibold text-ink">Inviteku</span></div>
+            <div className="flex justify-between"><span className="text-slate-soft">No. Rekening</span><span className="font-semibold text-ink font-mono text-base">5721813143</span></div>
+            <div className="flex justify-between"><span className="text-slate-soft">Atas Nama</span><span className="font-semibold text-ink">Rendra Tri Kusuma</span></div>
             {templatePrice && <div className="flex justify-between border-t border-lavender-200 pt-2.5 mt-1"><span className="text-slate-soft">Jumlah Transfer</span><span className="font-bold text-blush-500 text-lg">{formatRupiah(templatePrice.effective_price)}</span></div>}
           </div>
         </div>
 
-        {/* Upload */}
+        {/* Upload & Form */}
         <form onSubmit={submit} className="space-y-5">
+          <div className="space-y-2">
+            <label htmlFor="custom-key" className="block text-xs font-semibold text-slate-soft uppercase tracking-wider">
+              Key Undangan (URL)
+            </label>
+            <div className="flex bg-cream-50 rounded-xl border border-cream-300 overflow-hidden focus-within:border-blush-300 focus-within:ring-2 focus-within:ring-blush-100 transition-all">
+              <span className="bg-cream-100 px-3 py-3 text-slate-soft text-sm flex items-center border-r border-cream-300 select-none">
+                inviteku.com/
+              </span>
+              <input
+                id="custom-key"
+                type="text"
+                value={customKey}
+                onChange={e => setCustomKey(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                placeholder="nama-pasangan"
+                className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none"
+                required
+              />
+            </div>
+            <p className="text-[11px] text-slate-soft">Hanya huruf kecil, angka, strip (-), dan underscore (_).</p>
+          </div>
+
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Upload Bukti Transfer</p>
             <div
@@ -406,7 +433,7 @@ function CheckoutModal({
             <button type="button" onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-              disabled={!file || uploading}
+              disabled={!file || !customKey.trim() || uploading}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
               style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
               {uploading ? <><Loader2 size={16} className="animate-spin" />Mengirim…</> : <><Send size={16} />Kirim Request</>}
@@ -432,6 +459,22 @@ function UndanganCard({
   const [editOpen, setEditOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutDone, setCheckoutDone] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreview = async () => {
+    if (previewLoading) return;
+    setPreviewLoading(true);
+    try {
+      const res = await generatePreviewTokenApi(token, undangan.id);
+      if (res.data?.preview_token) {
+        window.open(`https://inviteku.com/undangan/preview?access=${res.data.preview_token}`, '_blank');
+      }
+    } catch (e: unknown) {
+      alert((e as { message?: string })?.message ?? "Gagal memuat preview.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   useEffect(() => {
     getPaymentStatusApi(token, undangan.id)
@@ -517,11 +560,19 @@ function UndanganCard({
 
         {/* Actions */}
         <div className="flex items-center flex-wrap gap-3 mt-5 pt-5 border-t border-cream-100">
-          {undangan.key_undangan && (
+          {undangan.key_undangan ? (
             <a href={`https://inviteku.com/${undangan.key_undangan}`} target="_blank" rel="noreferrer"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-lavender-200 text-lavender-600 hover:bg-lavender-50 transition-colors">
               <Eye size={16} /> Lihat Undangan
             </a>
+          ) : (
+            <button
+              onClick={handlePreview}
+              disabled={previewLoading}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-mint-200 text-mint-600 hover:bg-mint-50 transition-colors disabled:opacity-50"
+            >
+              {previewLoading ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />} Preview
+            </button>
           )}
           
           {isDraft && (

@@ -50,6 +50,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
 const adminNavItems = [
   { href: "/admin/dashboard", exact: true, label: "Overview", icon: <LayoutDashboard size={18} /> },
+  { href: "/admin/dashboard/undangan", label: "Undangan", icon: <Mail size={18} /> },
   { href: "/admin/dashboard/templates", label: "Template", icon: <Sparkles size={18} /> },
   { href: "/admin/dashboard/payments", label: "Pembayaran", icon: <CreditCard size={18} /> },
 ];
@@ -185,6 +186,8 @@ function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: (
 function AdminTopbar({ pathname, onMenuClick }: { pathname: string; onMenuClick: () => void }) {
   const pageNames: Record<string, string> = {
     "/admin/dashboard": "Overview",
+    "/admin/dashboard/undangan": "Manajemen Undangan",
+    "/admin/dashboard/templates": "Manajemen Template",
     "/admin/dashboard/payments": "Manajemen Pembayaran",
   };
   const title = pageNames[pathname] ?? "Admin";
