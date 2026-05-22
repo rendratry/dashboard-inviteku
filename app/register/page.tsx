@@ -144,6 +144,18 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Strict email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError(
+        language === "id"
+          ? "Format email tidak valid. Silakan masukkan alamat email yang benar (contoh: nama@email.com)."
+          : "Invalid email format. Please enter a valid email address (e.g., name@email.com)."
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await registerApi({ username, email, password, name });
@@ -307,7 +319,7 @@ export default function RegisterPage() {
               {/* Email */}
               <div className="space-y-1.5">
                 <label htmlFor="register-email" className="block text-sm font-medium text-ink-muted">
-                  {t.auth.emailLabel}
+                  {t.auth.emailRegisterLabel}
                 </label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-soft/60" />
@@ -318,7 +330,7 @@ export default function RegisterPage() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t.auth.emailPlaceholder}
+                    placeholder={t.auth.emailRegisterPlaceholder}
                     className="input-pastel w-full pl-10 pr-4 py-3 rounded-xl border border-cream-300 bg-white/70 text-ink placeholder-slate-soft/60 text-sm transition-all duration-200 focus:border-lavender-300"
                   />
                 </div>
