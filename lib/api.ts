@@ -562,6 +562,36 @@ export async function adminGetTemplateByIdApi(adminToken: string, id: number | s
   });
 }
 
+export async function adminGetUsersApi(
+  adminToken: string,
+  params?: { page?: number; limit?: number; search?: string }
+) {
+  const query = new URLSearchParams();
+  if (params?.page) query.append("page", params.page.toString());
+  if (params?.limit) query.append("limit", params.limit.toString());
+  if (params?.search) query.append("search", params.search);
+
+  const queryString = query.toString();
+  const url = `/admin/users${queryString ? `?${queryString}` : ""}`;
+
+  return apiFetch<{ data: AdminUsersResponse }>(url, {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminUpdateUserMitraApi(
+  adminToken: string,
+  id: string,
+  isMitra: boolean
+) {
+  return apiFetch<ApiResponse>(`/admin/users/${id}/mitra`, {
+    method: "PUT",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify({ is_mitra: isMitra }),
+  });
+}
+
 export async function getAssetBacksoundApi(token: string, id: number | string) {
   return apiFetch<{ data: AssetBacksound }>(`/asset-backsound/${id}`, {
     method: "GET",
@@ -689,6 +719,24 @@ export interface AdminPayment {
   note?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  is_mitra: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUsersResponse {
+  limit: number;
+  page: number;
+  total: number;
+  users: AdminUser[];
 }
 
 export interface LibraryAsset {

@@ -10,7 +10,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
-  ShieldCheck, CreditCard, ChevronLeft, LogOut, LayoutDashboard, Mail, Sparkles
+  ShieldCheck, CreditCard, ChevronLeft, LogOut, LayoutDashboard, Mail, Sparkles, User
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 
@@ -53,6 +53,7 @@ const adminNavItems = [
   { href: "/admin/dashboard/undangan", label: "Undangan", icon: <Mail size={18} /> },
   { href: "/admin/dashboard/templates", label: "Template", icon: <Sparkles size={18} /> },
   { href: "/admin/dashboard/payments", label: "Pembayaran", icon: <CreditCard size={18} /> },
+  { href: "/admin/dashboard/users", label: "Users", icon: <User size={18} /> },
 ];
 
 function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -189,6 +190,7 @@ function AdminTopbar({ pathname, onMenuClick }: { pathname: string; onMenuClick:
     "/admin/dashboard/undangan": "Manajemen Undangan",
     "/admin/dashboard/templates": "Manajemen Template",
     "/admin/dashboard/payments": "Manajemen Pembayaran",
+    "/admin/dashboard/users": "Manajemen Users",
   };
   const title = pageNames[pathname] ?? "Admin";
 
