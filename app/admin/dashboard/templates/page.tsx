@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, CheckCircle2, AlertTriangle, Loader2, X, Plus, Edit2, RefreshCw, Image as ImageIcon, Trash2,
+  Sparkles, CheckCircle2, AlertTriangle, Loader2, X, Plus, Edit2, RefreshCw, Image as ImageIcon, Trash2, Eye,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import { adminGetTemplatesApi, adminCreateTemplateApi, adminUpdateTemplateApi, type TemplatePrice } from "@/lib/api";
@@ -308,8 +308,15 @@ export default function AdminTemplatesPage() {
                     {tpl.is_published ? "Published" : "Draft"}
                   </span>
                 </div>
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <button onClick={() => setModalTarget(tpl)} className="p-2 bg-white/90 backdrop-blur rounded-lg text-ink hover:text-blush-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => window.open(`https://inviteku.com/template/preview/${tpl.template}`, "_blank")} 
+                    title="Preview Template"
+                    className="p-2 bg-white/90 backdrop-blur rounded-lg text-ink hover:text-blush-500 shadow-sm transition-colors">
+                    <Eye size={14} />
+                  </button>
+                  <button onClick={() => setModalTarget(tpl)} 
+                    title="Edit Template"
+                    className="p-2 bg-white/90 backdrop-blur rounded-lg text-ink hover:text-blush-500 shadow-sm transition-colors">
                     <Edit2 size={14} />
                   </button>
                 </div>

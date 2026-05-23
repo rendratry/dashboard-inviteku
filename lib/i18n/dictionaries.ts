@@ -133,7 +133,7 @@ const dashboardEN = {
 // Undangan Page
 const undanganID = {
   title: "Buat Undangan",
-  subtitle: "Kelola dan buat undangan digital baru untuk momen spesial Anda.",
+  subtitle: "Kelola dan buat undangan digital baru untuk momen spesial Anda. Anda bisa mencoba semua template secara gratis, pembayaran hanya dilakukan ketika ingin mem-publish undangan.",
   newInvitation: "Mulai Undangan Baru",
   step1: "1. Nama Pasangan",
   step1Sub: "Nama yang akan menjadi judul utama undangan digital Anda.",

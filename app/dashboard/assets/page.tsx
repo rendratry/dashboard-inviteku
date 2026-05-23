@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Users, Gem, PartyPopper, Image, MapPin, Gift,
   Palette, Paperclip, CheckCircle2, AlertTriangle, Loader2,
-  ChevronDown, Music, X, Search, Library, Plus, Trash2, CreditCard, Eye
+  ChevronDown, Music, X, Search, Library, Plus, Trash2, CreditCard, Eye,
+  RotateCcw, Save, Frame, LayoutGrid, UserRound, Heart, Layers2, Camera, Rows3, MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
@@ -20,9 +21,11 @@ import {
   getAssetBacksoundApi, updateAssetBacksoundApi,
   getUndanganApi, getLibraryAssetsApi, getPaymentLogosApi,
   generatePreviewTokenApi,
+  getDisplayConfigApi, updateDisplayConfigApi, getTemplateDefaultConfigApi,
+  updateQuotesAssetsApi, getQuotesAssetsApi,
   type AssetOpening, type AssetMempelai, type AssetAkad,
   type AssetResepsi, type AssetGallery, type AssetMaps, type AssetGift,
-  type AssetBacksound,
+  type AssetBacksound, type DisplayConfig, type AssetQuotes,
   type Undangan, type LibraryAsset
 } from "@/lib/api";
 
@@ -91,6 +94,7 @@ function UndanganSelector({
 
 const TABS = [
   { id: "opening",  label: "Opening",  icon: <Mail size={15} /> },
+  { id: "quotes",   label: "Quotes",   icon: <MessageSquare size={15} /> },
   { id: "mempelai", label: "Mempelai", icon: <Users size={15} /> },
   { id: "akad",     label: "Akad",     icon: <Gem size={15} /> },
   { id: "resepsi",  label: "Resepsi",  icon: <PartyPopper size={15} /> },
@@ -98,6 +102,7 @@ const TABS = [
   { id: "maps",     label: "Maps",     icon: <MapPin size={15} /> },
   { id: "gift",     label: "Gift",     icon: <Gift size={15} /> },
   { id: "backsound", label: "Backsound", icon: <Music size={15} /> },
+  { id: "tampilan", label: "Tampilan",  icon: <Palette size={15} /> },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -372,6 +377,87 @@ function OpeningTab({ token, idUndangan }: { token: string; idUndangan: number }
       </FormField>
       <AssetPicker label="Foto Cover" currentId={data?.foto_cover} token={token} type="image"
         onSelect={(id) => update("foto_cover", id)} />
+      <SaveButton loading={saving} />
+    </form>
+  );
+}
+
+function QuotesTab({ token, undangan }: { token: string; undangan: Undangan }) {
+  const defaultQuote = "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sungguh, pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.";
+  const defaultSumber = "(Q.S. Ar-Rum Ayat 21)";
+
+  const [data, setData] = useState<{ teks: string; sumber: string }>({ teks: "", sumber: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [alert, setAlert] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
+
+  useEffect(() => {
+    setLoading(true);
+    getQuotesAssetsApi(token, undangan.id).then((r) => {
+      const q = r.data;
+      setData({
+        teks: q?.teks || "",
+        sumber: q?.sumber || "",
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [token, undangan.id]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateQuotesAssetsApi(token, {
+        id_undangan: undangan.id,
+        teks: data.teks,
+        sumber: data.sumber,
+      });
+      setAlert({ type: "success", message: "Quotes saved!" });
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setAlert({ type: "error", message: e?.message ?? "Failed." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <SectionSkeleton />;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <AlertBanner {...alert} />
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setData({ teks: defaultQuote, sumber: defaultSumber })}
+          className="text-xs font-semibold text-lavender-600 hover:text-lavender-700 bg-lavender-50 hover:bg-lavender-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+        >
+          Reset ke Default
+        </button>
+      </div>
+
+      <FormField label="Teks Quote" id="quotes-teks">
+        <textarea
+          id="quotes-teks"
+          rows={5}
+          className={inputClass + " resize-none"}
+          placeholder={defaultQuote}
+          value={data.teks}
+          onChange={(e) => setData(d => ({ ...d, teks: e.target.value }))}
+        />
+      </FormField>
+
+      <FormField label="Sumber / Penulis" id="quotes-sumber">
+        <input
+          id="quotes-sumber"
+          type="text"
+          className={inputClass}
+          placeholder={defaultSumber}
+          value={data.sumber}
+          onChange={(e) => setData(d => ({ ...d, sumber: e.target.value }))}
+        />
+      </FormField>
+
       <SaveButton loading={saving} />
     </form>
   );
@@ -913,11 +999,330 @@ function BacksoundTab({ token, idUndangan }: { token: string; idUndangan: number
   );
 }
 
+// ── Display Config Tab ──────────────────────────────────────────────────────
+
+// Definisi frame shapes untuk picker visual
+const FRAME_OPTIONS = [
+  { key: 'rounded-arch', label: 'Arch', desc: 'Setengah lingkaran atas' },
+  { key: 'circle',       label: 'Circle', desc: 'Lingkaran penuh' },
+  { key: 'rectangle',    label: 'Kotak', desc: 'Persegi biasa' },
+  { key: 'rounded',      label: 'Rounded', desc: 'Sudut membulat' },
+  { key: 'diamond',      label: 'Diamond', desc: 'Belah ketupat' },
+  { key: 'love',         label: 'Love', desc: 'Bentuk hati ❤️' },
+  { key: 'hexagon',      label: 'Hexagon', desc: 'Segi enam' },
+  { key: 'star',         label: 'Star', desc: 'Bintang ⭐' },
+];
+
+// Definisi layout gallery untuk picker visual
+const GRID_OPTIONS = [
+  { key: 'masonry-classic', label: 'Masonry', desc: 'Layout asimetris dinamis' },
+  { key: 'grid-equal',      label: 'Grid Rata', desc: '2×3 semua sama besar' },
+  { key: 'grid-featured',   label: 'Featured', desc: '1 besar + 5 kecil' },
+  { key: 'mosaic',          label: 'Mosaic', desc: 'Pola mosaic estetik' },
+  { key: 'polaroid',        label: 'Polaroid', desc: 'Frame ala polaroid' },
+];
+
+// Komponen SVG preview untuk frame shape
+function FramePreview({ frameKey, size = 56, selected = false }: { frameKey: string; size?: number; selected?: boolean }) {
+  const color = selected ? '#ff9fb5' : '#c8bfb8';
+  const bg = selected ? '#fff0f3' : '#f8f4f1';
+
+  const shapeStyle: React.CSSProperties = (() => {
+    switch (frameKey) {
+      // Untuk thumbnail kecil (48px), gunakan persentase tinggi agar arch terlihat proporsional
+      // Nilai 90px pada foto real = ~70% dari lebar foto 50%vw
+      case 'rounded-arch': return { borderTopLeftRadius: '70%', borderTopRightRadius: '70%', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' };
+      case 'circle':       return { borderRadius: '50%' };
+      case 'rectangle':    return { borderRadius: '0' };
+      case 'rounded':      return { borderRadius: '8px' };
+      case 'diamond':      return { clipPath: 'polygon(50% 0%,100% 50%,50% 100%,0% 50%)', borderRadius: '0' };
+      case 'love':         return { clipPath: 'path("M 50 85 C 50 85 10 60 10 30 C 10 15 20 5 35 5 C 42 5 48 9 50 13 C 52 9 58 5 65 5 C 80 5 90 15 90 30 C 90 60 50 85 50 85 Z")', borderRadius: '0' };
+      case 'hexagon':      return { clipPath: 'polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)', borderRadius: '0' };
+      case 'star':         return { clipPath: 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)', borderRadius: '0' };
+      default:             return { borderTopLeftRadius: '70%', borderTopRightRadius: '70%', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px' };
+    }
+  })();
+
+  return (
+    <div
+      style={{
+        width: size, height: size,
+        background: `linear-gradient(135deg, ${color}88, ${color}44)`,
+        backgroundColor: bg,
+        border: `2px solid ${color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        ...shapeStyle,
+      }}
+    />
+  );
+}
+
+// Picker untuk satu group frame (misal: frame_opening)
+function FramePicker({ label, icon, value, onChange }: { label: string; icon?: React.ReactNode; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
+        {icon && <span className="text-blush-400">{icon}</span>}
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-3">
+        {FRAME_OPTIONS.map((opt) => {
+          const isSelected = value === opt.key;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onChange(opt.key)}
+              title={opt.desc}
+              className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? 'border-blush-400 bg-blush-50 shadow-md'
+                  : 'border-cream-200 bg-white hover:border-lavender-300 hover:bg-cream-50'
+              }`}
+              style={{ minWidth: 68 }}
+            >
+              <FramePreview frameKey={opt.key} size={48} selected={isSelected} />
+              <span className={`text-xs font-medium leading-tight text-center ${isSelected ? 'text-blush-600' : 'text-slate-soft'}`}>
+                {opt.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Komponen preview thumbnail untuk grid layout
+function GridPreview({ gridKey, selected = false }: { gridKey: string; selected?: boolean }) {
+  const color = selected ? '#ff9fb5' : '#c8bfb8';
+  const bg = selected ? '#fff0f3' : '#f8f4f1';
+
+  const cells: { col: string; row: string }[] = (() => {
+    switch (gridKey) {
+      case 'masonry-classic': return [
+        { col: '1/3', row: '1/3' }, { col: '3/4', row: '1/2' },
+        { col: '3/4', row: '2/4' }, { col: '1/2', row: '3/4' },
+        { col: '2/3', row: '3/4' }
+      ];
+      case 'grid-equal': return [
+        { col: '1/2', row: '1/2' }, { col: '2/3', row: '1/2' },
+        { col: '1/2', row: '2/3' }, { col: '2/3', row: '2/3' },
+        { col: '1/2', row: '3/4' }, { col: '2/3', row: '3/4' },
+      ];
+      case 'grid-featured': return [
+        { col: '1/4', row: '1/2' },
+        { col: '1/2', row: '2/3' }, { col: '2/3', row: '2/3' }, { col: '3/4', row: '2/3' },
+      ];
+      case 'mosaic': return [
+        { col: '1/3', row: '1/3' }, { col: '3/5', row: '1/2' },
+        { col: '3/4', row: '2/3' }, { col: '4/5', row: '2/3' },
+        { col: '1/4', row: '3/4' },
+      ];
+      case 'polaroid': return [
+        { col: '1/2', row: '1/2' }, { col: '2/3', row: '1/2' },
+        { col: '1/2', row: '2/3' }, { col: '2/3', row: '2/3' },
+      ];
+      default: return [];
+    }
+  })();
+
+  const hasPolaroidBorder = gridKey === 'polaroid';
+
+  return (
+    <div style={{
+      width: 80, height: 64,
+      display: 'grid',
+      gridTemplateColumns: gridKey === 'masonry-classic' ? 'repeat(3,1fr)'
+        : gridKey === 'grid-equal' ? 'repeat(2,1fr)'
+        : gridKey === 'grid-featured' ? 'repeat(3,1fr)'
+        : gridKey === 'mosaic' ? 'repeat(4,1fr)'
+        : 'repeat(2,1fr)',
+      gridTemplateRows: 'repeat(3, 1fr)',
+      gap: 2,
+      padding: 4,
+      background: bg,
+      borderRadius: 8,
+      border: `2px solid ${color}`,
+    }}>
+      {cells.map((cell, i) => (
+        <div key={i} style={{
+          gridColumn: cell.col,
+          gridRow: cell.row,
+          background: color,
+          borderRadius: hasPolaroidBorder ? 2 : 3,
+          opacity: selected ? 0.85 : 0.6,
+          outline: hasPolaroidBorder ? `2px solid white` : 'none',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function DisplayConfigTab({ token, idUndangan, template }: { token: string; idUndangan: number; template?: string }) {
+  const [config, setConfig] = useState<DisplayConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [alert, setAlert] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
+
+  useEffect(() => {
+    setLoading(true); setConfig(null);
+    getDisplayConfigApi(token, idUndangan)
+      .then((r) => setConfig(r.data))
+      .catch(() => {
+        // Jika belum ada config, buat default kosong
+        setConfig({
+          id_undangan: idUndangan,
+          frame_opening: 'rounded-arch',
+          frame_mempelai_pria: 'circle',
+          frame_mempelai_wanita: 'circle',
+          frame_akad: 'rounded-arch',
+          frame_resepsi: 'rounded-arch',
+          gallery_grid: 'masonry-classic',
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [token, idUndangan]);
+
+  const update = <K extends keyof DisplayConfig>(field: K, value: DisplayConfig[K]) =>
+    setConfig((d) => d ? { ...d, [field]: value } : d);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!config) return;
+    setSaving(true); setAlert({ type: null, message: '' });
+    try {
+      await updateDisplayConfigApi(token, config);
+      setAlert({ type: 'success', message: 'Konfigurasi tampilan berhasil disimpan! ✨' });
+      setTimeout(() => setAlert({ type: null, message: '' }), 4000);
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setAlert({ type: 'error', message: e?.message ?? 'Gagal menyimpan.' });
+    } finally { setSaving(false); }
+  };
+
+  const handleReset = async () => {
+    setResetting(true); setAlert({ type: null, message: '' });
+    try {
+      const res = await getTemplateDefaultConfigApi(token, idUndangan);
+      setConfig(res.data);
+      setAlert({ type: 'success', message: `Berhasil dimuat default template! Klik Simpan untuk menyimpan perubahan.` });
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setAlert({ type: 'error', message: e?.message ?? 'Gagal memuat default.' });
+    } finally { setResetting(false); }
+  };
+
+  if (loading) return <SectionSkeleton />;
+  if (!config) return null;
+
+  const frameFields: { field: keyof DisplayConfig; label: string; icon: React.ReactNode }[] = [
+    { field: 'frame_opening',        label: 'Frame Foto Opening (Cover)',  icon: <Camera size={14} /> },
+    { field: 'frame_mempelai_pria',  label: 'Frame Foto Mempelai Pria',   icon: <UserRound size={14} /> },
+    { field: 'frame_mempelai_wanita',label: 'Frame Foto Mempelai Wanita', icon: <UserRound size={14} /> },
+    { field: 'frame_akad',           label: 'Bentuk Info Akad',           icon: <Gem size={14} /> },
+    { field: 'frame_resepsi',        label: 'Bentuk Info Resepsi',        icon: <PartyPopper size={14} /> },
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Header section */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="text-base font-bold text-ink flex items-center gap-2">
+            <Palette size={18} className="text-blush-400" />
+            Kustomisasi Tampilan Foto
+          </h3>
+          <p className="text-xs text-slate-soft mt-0.5">Pilih bentuk frame foto dan layout gallery yang paling sesuai.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={resetting}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-cream-300 bg-cream-50 text-slate-soft hover:bg-cream-100 hover:text-ink transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          {resetting ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+          Reset ke Default Template
+        </button>
+      </div>
+
+      <AlertBanner {...alert} />
+
+      {/* Frame Pickers */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 pb-2 border-b border-cream-100">
+          <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(135deg,#ff9fb5,#c2a7ff)' }} />
+          <Frame size={15} className="text-blush-400" />
+          <h4 className="font-bold text-sm text-ink">Bentuk Frame Foto</h4>
+        </div>
+        {frameFields.map(({ field, label, icon }) => (
+          <FramePicker
+            key={field}
+            label={label}
+            icon={icon}
+            value={config[field] as string}
+            onChange={(v) => update(field, v)}
+          />
+        ))}
+      </div>
+
+      {/* Gallery Grid Picker */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-cream-100">
+          <div className="w-1 h-5 rounded-full" style={{ background: 'linear-gradient(135deg,#b3e3ff,#9af5db)' }} />
+          <LayoutGrid size={15} className="text-mint-500" />
+          <h4 className="font-bold text-sm text-ink">Layout Grid Gallery</h4>
+        </div>
+        <p className="text-xs text-slate-soft">Pilih susunan foto-foto di halaman Gallery.</p>
+        <div className="flex flex-wrap gap-4">
+          {GRID_OPTIONS.map((opt) => {
+            const isSelected = config.gallery_grid === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => update('gallery_grid', opt.key)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? 'border-blush-400 bg-blush-50 shadow-md'
+                    : 'border-cream-200 bg-white hover:border-lavender-300 hover:bg-cream-50'
+                }`}
+              >
+                <GridPreview gridKey={opt.key} selected={isSelected} />
+                <div className="text-center">
+                  <p className={`text-xs font-bold ${isSelected ? 'text-blush-600' : 'text-ink'}`}>{opt.label}</p>
+                  <p className="text-[10px] text-slate-soft mt-0.5 max-w-[80px] leading-tight">{opt.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex justify-end pt-2 border-t border-cream-100">
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          type="submit"
+          disabled={saving}
+          id="display-config-save-btn"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 cursor-pointer shadow-md"
+          style={{ background: 'linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)' }}
+        >
+          {saving ? <><Loader2 size={14} className="animate-spin" />Menyimpan…</> : <><Save size={14} />Simpan Tampilan</>}
+        </motion.button>
+      </div>
+    </form>
+  );
+}
+
 // ── Tab Router ─────────────────────────────────────────────────────────────
 
-function TabContent({ id, token, idUndangan }: { id: TabId; token: string; idUndangan: number }) {
+function TabContent({ id, token, idUndangan, undangan }: { id: TabId; token: string; idUndangan: number; undangan?: import("@/lib/api").Undangan | null }) {
   switch (id) {
     case "opening":  return <OpeningTab  token={token} idUndangan={idUndangan} />;
+    case "quotes":   return undangan ? <QuotesTab token={token} undangan={undangan} /> : null;
     case "mempelai": return <MempelaiTab token={token} idUndangan={idUndangan} />;
     case "akad":     return <AkadTab     token={token} idUndangan={idUndangan} />;
     case "resepsi":  return <ResepsiTab  token={token} idUndangan={idUndangan} />;
@@ -925,6 +1330,7 @@ function TabContent({ id, token, idUndangan }: { id: TabId; token: string; idUnd
     case "maps":     return <MapsTab     token={token} idUndangan={idUndangan} />;
     case "gift":     return <GiftTab     token={token} idUndangan={idUndangan} />;
     case "backsound": return <BacksoundTab token={token} idUndangan={idUndangan} />;
+    case "tampilan": return <DisplayConfigTab token={token} idUndangan={idUndangan} template={undangan?.template} />;
   }
 }
 
@@ -1043,7 +1449,7 @@ export default function AssetsPage() {
               <motion.div key={`${activeTab}-${selectedUndangan.id}`}
                 initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.22 }}>
-                <TabContent id={activeTab} token={token} idUndangan={selectedUndangan.id} />
+                <TabContent id={activeTab} token={token} idUndangan={selectedUndangan.id} undangan={selectedUndangan} />
               </motion.div>
             </AnimatePresence>
           </motion.div>

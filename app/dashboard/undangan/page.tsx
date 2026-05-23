@@ -578,20 +578,18 @@ function UndanganCard({
 
         {/* Actions */}
         <div className="flex items-center flex-wrap gap-3 mt-5 pt-5 border-t border-cream-100">
-          {undangan.key_undangan ? (
-            <a href={`https://inviteku.com/${undangan.key_undangan}`} target="_blank" rel="noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-lavender-200 text-lavender-600 hover:bg-lavender-50 transition-colors">
-              <Eye size={16} /> Lihat Undangan
-            </a>
-          ) : (
-            <button
-              onClick={handlePreview}
-              disabled={previewLoading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-mint-200 text-mint-600 hover:bg-mint-50 transition-colors disabled:opacity-50"
-            >
-              {previewLoading ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />} Preview
-            </button>
-          )}
+          <button
+            onClick={handlePreview}
+            disabled={previewLoading}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-colors disabled:opacity-50 ${
+              undangan.key_undangan
+                ? "border-lavender-200 text-lavender-600 hover:bg-lavender-50"
+                : "border-mint-200 text-mint-600 hover:bg-mint-50"
+            }`}
+          >
+            {previewLoading ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
+            {undangan.key_undangan ? " Lihat Undangan" : " Preview"}
+          </button>
           
           {isDraft && (
             <button
@@ -707,13 +705,15 @@ export default function UndanganPage() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md"
+        <div className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-md"
           style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
           <Mail size={24} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-ink">Buat Undangan</h1>
-          <p className="text-slate-soft mt-0.5">Kelola dan buat undangan digital baru untuk momen spesial Anda.</p>
+          <p className="text-slate-soft mt-0.5">
+            Kelola dan buat undangan digital baru untuk momen spesial Anda. Anda bisa mencoba semua template secara gratis, pembayaran hanya dilakukan ketika ingin mem-publish undangan.
+          </p>
         </div>
       </motion.div>
 

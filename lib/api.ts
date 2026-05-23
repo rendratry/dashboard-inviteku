@@ -669,10 +669,12 @@ export interface AdminUndangan extends Undangan {
   mempelai_assets?: any;
   akad_assets?: any;
   resepsi_assets?: any;
-  gallery_assets?: any;
-  maps_assets?: any;
-  gift_accounts?: any[];
-  backsound_assets?: any;
+  gallery_assets: AssetGallery;
+  maps_assets: AssetMaps;
+  gift_accounts: AssetGift[];
+  backsound_assets: AssetBacksound;
+  display_config: DisplayConfig;
+  quotes_assets: AssetQuotes;
 }
 
 export interface TemplatePrice {
@@ -847,4 +849,79 @@ export interface Komentar {
   pesan: string;
   status: boolean;
   created_at?: string;
+}
+
+// ── Display Config (Frame Foto & Grid Gallery) ──────────────────────────────
+
+export interface AssetQuotes {
+  id: number;
+  id_undangan: number;
+  teks: string;
+  sumber: string;
+}
+
+export interface DisplayConfig {
+  id?: number;
+  id_undangan: number;
+  frame_opening: string;
+  frame_mempelai_pria: string;
+  frame_mempelai_wanita: string;
+  frame_akad: string;
+  frame_resepsi: string;
+  gallery_grid: string;
+}
+
+
+/**
+ * Mengambil konfigurasi tampilan (frame foto & grid gallery) untuk undangan.
+ */
+export async function getDisplayConfigApi(token: string, idUndangan: number | string) {
+  return apiFetch<{ data: DisplayConfig }>(`/display-config/${idUndangan}`, {
+    headers: authHeaders(token),
+  });
+}
+
+/**
+ * Memperbarui konfigurasi tampilan untuk undangan.
+ */
+export async function updateDisplayConfigApi(token: string, payload: DisplayConfig) {
+  return apiFetch<ApiResponse>("/update-display-config", {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Mengambil konfigurasi default sesuai template undangan.
+ * Digunakan untuk fitur "Reset ke Default Template".
+ */
+export async function getTemplateDefaultConfigApi(token: string, idUndangan: number | string) {
+  return apiFetch<{ data: DisplayConfig }>(`/display-config-default/${idUndangan}`, {
+    headers: authHeaders(token),
+  });
+}
+
+export async function updateQuotesAssetsApi(
+  token: string,
+  payload: {
+    id_undangan: number;
+    teks: string;
+    sumber: string;
+  }
+) {
+  return apiFetch<ApiResponse>(
+    "/update-asset-quotes",
+    {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function getQuotesAssetsApi(token: string, idUndangan: number) {
+  return apiFetch<{ data: AssetQuotes }>(`/asset-quotes/${idUndangan}`, {
+    headers: authHeaders(token),
+  });
 }
