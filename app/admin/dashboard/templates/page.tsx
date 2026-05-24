@@ -3,28 +3,202 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, CheckCircle2, AlertTriangle, Loader2, X, Plus, Edit2, RefreshCw, Image as ImageIcon, Trash2, Eye,
+  Sparkles, CheckCircle2, AlertTriangle, Loader2, X, Plus, Edit2, RefreshCw, Image as ImageIcon, Trash2, Eye, Maximize,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import { adminGetTemplatesApi, adminCreateTemplateApi, adminUpdateTemplateApi, type TemplatePrice } from "@/lib/api";
+
+// ── Image Resizer Modal ────────────────────────────────────────────────────
+
+function ImageResizerModal({
+  fileOrUrl,
+  onClose,
+  onSave,
+}: {
+  fileOrUrl: File | string;
+  onClose: () => void;
+  onSave: (resizedFile: File) => void;
+}) {
+  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
+  const [width, setWidth] = useState<number>(0);
+  const [height, setHeight] = useState<number>(0);
+  const [lockAspectRatio, setLockAspectRatio] = useState(true);
+  const [aspectRatio, setAspectRatio] = useState<number>(1);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let url = "";
+    let isBlob = false;
+    if (typeof fileOrUrl === "string") {
+      url = fileOrUrl;
+    } else {
+      url = URL.createObjectURL(fileOrUrl);
+      isBlob = true;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setOriginalImage(img);
+      setWidth(img.width);
+      setHeight(img.height);
+      setAspectRatio(img.width / img.height);
+      if (isBlob) URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      alert("Gagal memuat gambar dari server untuk di-resize. Silakan upload file baru.");
+      if (isBlob) URL.revokeObjectURL(url);
+      onClose();
+    };
+    img.src = url;
+  }, [fileOrUrl, onClose]);
+
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value) || 0;
+    setWidth(val);
+    if (lockAspectRatio && aspectRatio > 0) {
+      setHeight(Math.round(val / aspectRatio));
+    }
+  };
+
+  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value) || 0;
+    setHeight(val);
+    if (lockAspectRatio && aspectRatio > 0) {
+      setWidth(Math.round(val * aspectRatio));
+    }
+  };
+
+  const handleSave = () => {
+    if (!originalImage || !canvasRef.current || width <= 0 || height <= 0) return;
+    const canvas = canvasRef.current;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    // Draw resized image
+    ctx.drawImage(originalImage, 0, 0, width, height);
+    
+    let targetType = "image/png";
+    let targetName = "resized.png";
+
+    if (typeof fileOrUrl === "string") {
+      const lowerUrl = fileOrUrl.toLowerCase();
+      if (lowerUrl.includes(".jpg") || lowerUrl.includes(".jpeg")) {
+        targetType = "image/jpeg";
+        targetName = "resized.jpg";
+      } else if (lowerUrl.includes(".webp")) {
+        targetType = "image/webp";
+        targetName = "resized.webp";
+      }
+    } else {
+      targetType = fileOrUrl.type;
+      targetName = fileOrUrl.name;
+    }
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const newFile = new File([blob], targetName, {
+          type: targetType,
+          lastModified: Date.now(),
+        });
+        onSave(newFile);
+      }
+    }, targetType, 0.9);
+  };
+
+  if (!originalImage) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="relative bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-full">
+        
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cream-100 bg-cream-50/50">
+          <h2 className="text-xl font-bold text-ink">Resize Gambar</h2>
+          <button type="button" onClick={onClose} className="p-2 -mr-2 text-slate-soft hover:bg-cream-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto space-y-6">
+          <div className="bg-cream-50 rounded-2xl p-4 flex justify-center items-center h-48 overflow-hidden border border-cream-100">
+            {/* Hidden canvas for processing */}
+            <canvas ref={canvasRef} className="hidden" />
+            <img src={originalImage.src} alt="Original" className="max-w-full max-h-full object-contain shadow-sm rounded-lg" />
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1.5">
+                <label className="text-sm font-medium text-ink-muted">Width (px)</label>
+                <input type="number" value={width || ""} onChange={handleWidthChange}
+                  className="w-full px-4 py-2.5 bg-white border border-cream-200 rounded-xl text-ink font-medium focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-transparent transition-all" />
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <label className="text-sm font-medium text-ink-muted">Height (px)</label>
+                <input type="number" value={height || ""} onChange={handleHeightChange}
+                  className="w-full px-4 py-2.5 bg-white border border-cream-200 rounded-xl text-ink font-medium focus:outline-none focus:ring-2 focus:ring-blush-400 focus:border-transparent transition-all" />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${lockAspectRatio ? "bg-mint-500 border-mint-500" : "bg-white border-cream-300 group-hover:border-mint-400"}`}>
+                {lockAspectRatio && <CheckCircle2 size={14} className="text-white" />}
+              </div>
+              <input type="checkbox" checked={lockAspectRatio} onChange={e => setLockAspectRatio(e.target.checked)} className="hidden" />
+              <span className="text-sm font-medium text-slate-soft group-hover:text-ink transition-colors">Lock Aspect Ratio</span>
+            </label>
+            <p className="text-xs text-slate-soft/80 bg-blue-50 text-blue-700 p-3 rounded-lg">
+              Dimensi asli: {originalImage.width} x {originalImage.height} px
+            </p>
+          </div>
+        </div>
+
+        <div className="p-6 pt-2 border-t border-cream-100 bg-cream-50/50 flex justify-end gap-3">
+          <button type="button" onClick={onClose}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="button" onClick={handleSave}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md bg-blush-500 hover:bg-blush-600 transition-colors">
+            Simpan Resize
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // ── File Upload Helper ─────────────────────────────────────────────────────
 
 function FileUploadField({ label, name, currentFileUrl, onFileChange }: { label: string; name: string; currentFileUrl?: string; onFileChange: (f: File | null) => void }) {
   const [preview, setPreview] = useState<string | null>(currentFileUrl ?? null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
+      setCurrentFile(f);
       onFileChange(f);
       const reader = new FileReader();
-      reader.onload = e => setPreview(e.target?.result as string);
+      reader.onload = ev => setPreview(ev.target?.result as string);
       reader.readAsDataURL(f);
     }
   };
 
+  const handleResized = (resizedFile: File) => {
+    setCurrentFile(resizedFile);
+    onFileChange(resizedFile);
+    const reader = new FileReader();
+    reader.onload = ev => setPreview(ev.target?.result as string);
+    reader.readAsDataURL(resizedFile);
+    setIsResizing(false);
+  };
+
   const removeFile = () => {
+    setCurrentFile(null);
     onFileChange(null);
     setPreview(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -38,10 +212,15 @@ function FileUploadField({ label, name, currentFileUrl, onFileChange }: { label:
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={preview} alt={label} className="max-w-full max-h-full object-contain p-2" />
           <div className="absolute inset-0 bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <button type="button" onClick={() => inputRef.current?.click()} className="p-2 bg-white rounded-full text-ink hover:text-blush-500">
+            {(currentFile || preview) && (
+              <button type="button" onClick={() => setIsResizing(true)} title="Resize Gambar" className="p-2 bg-white rounded-full text-ink hover:text-blush-500">
+                <Maximize size={16} />
+              </button>
+            )}
+            <button type="button" onClick={() => inputRef.current?.click()} title="Ganti File" className="p-2 bg-white rounded-full text-ink hover:text-blush-500">
               <Edit2 size={16} />
             </button>
-            <button type="button" onClick={removeFile} className="p-2 bg-white rounded-full text-ink hover:text-red-500">
+            <button type="button" onClick={removeFile} title="Hapus" className="p-2 bg-white rounded-full text-ink hover:text-red-500">
               <Trash2 size={16} />
             </button>
           </div>
@@ -53,6 +232,16 @@ function FileUploadField({ label, name, currentFileUrl, onFileChange }: { label:
         </div>
       )}
       <input ref={inputRef} type="file" name={name} accept="image/*" className="hidden" onChange={handleFile} />
+
+      <AnimatePresence>
+        {isResizing && (currentFile || preview) && (
+          <ImageResizerModal
+            fileOrUrl={currentFile || preview!}
+            onClose={() => setIsResizing(false)}
+            onSave={handleResized}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
