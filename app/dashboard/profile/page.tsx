@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion, Variants } from "framer-motion";
-import { User, CheckCircle2, AlertTriangle, Lock, Camera } from "lucide-react";
+import { motion, Variants, AnimatePresence } from "framer-motion";
+import { User, CheckCircle2, AlertTriangle, Lock, Camera, Eye, X } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
-import { updateUserApi, updateAvatarApi } from "@/lib/api";
+import { updateUserApi, updateAvatarApi, changePasswordApi } from "@/lib/api";
 import { UserAvatar } from "@/components/Sidebar";
+import { CropperModal } from "@/components/CropperModal";
 
 type AlertType = "success" | "error" | null;
 
@@ -36,8 +37,19 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  
+  // Cropping States
+  const [croppingSrc, setCroppingSrc] = useState<string | null>(null);
+  const [croppedAvatarFile, setCroppedAvatarFile] = useState<File | null>(null);
+
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarAlert, setAvatarAlert] = useState<{ type: AlertType; message: string }>({ type: null, message: "" });
+
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passLoading, setPassLoading] = useState(false);
+  const [passAlert, setPassAlert] = useState<{ type: AlertType; message: string }>({ type: null, message: "" });
 
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,11 +69,19 @@ export default function ProfilePage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAvatarPreview(URL.createObjectURL(file));
+    setCroppingSrc(URL.createObjectURL(file));
+    if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    setCroppedAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(croppedBlob));
+    setCroppingSrc(null);
   };
 
   const handleAvatarSubmit = async () => {
-    const file = fileInputRef.current?.files?.[0];
+    const file = croppedAvatarFile;
     if (!file || !token) return;
     setAvatarLoading(true);
     setAvatarAlert({ type: null, message: "" });
@@ -75,6 +95,22 @@ export default function ProfilePage() {
       const e = err as { message?: string };
       setAvatarAlert({ type: "error", message: e?.message ?? "Failed to update avatar." });
     } finally { setAvatarLoading(false); }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !oldPassword || !newPassword) return;
+    setPassLoading(true);
+    setPassAlert({ type: null, message: "" });
+    try {
+      await changePasswordApi(token, oldPassword, newPassword);
+      setPassAlert({ type: "success", message: "Password changed successfully!" });
+      setOldPassword("");
+      setNewPassword("");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setPassAlert({ type: "error", message: e?.message ?? "Failed to change password." });
+    } finally { setPassLoading(false); }
   };
 
   const cardVariants: Variants = {
@@ -109,11 +145,11 @@ export default function ProfilePage() {
               <div className="w-16 h-16 rounded-2xl bg-cream-200 animate-pulse" />
             )}
             <button
-              id="change-avatar-btn"
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute inset-0 flex items-center justify-center rounded-2xl bg-ink/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              id="view-avatar-btn"
+              onClick={() => setAvatarModalOpen(true)}
+              className="absolute inset-0 flex items-center justify-center rounded-xl bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             >
-              <Camera size={18} className="text-white" />
+              <Eye size={18} className="text-white" />
             </button>
           </div>
 
@@ -187,13 +223,78 @@ export default function ProfilePage() {
 
       {/* Security card */}
       <motion.div custom={2} variants={cardVariants} initial="hidden" animate="visible" className="bg-white rounded-2xl p-6 shadow-card">
-        <h2 className="font-semibold text-ink mb-2">Security</h2>
-        <p className="text-sm text-slate-soft mb-4">Password changes are handled via the verification endpoint.</p>
-        <div className="flex items-center gap-3 px-4 py-3 bg-lavender-50 rounded-xl border border-lavender-100">
-          <Lock size={18} className="text-lavender-400 flex-shrink-0" />
-          <p className="text-sm text-ink-muted">Contact your administrator to reset your password.</p>
-        </div>
+        <h2 className="font-semibold text-ink mb-5">Change Password</h2>
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="old-password" className="block text-sm font-medium text-ink-muted">Current Password</label>
+            <input
+              id="old-password" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)}
+              required placeholder="Enter current password" minLength={6}
+              className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm transition-all duration-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="new-password" className="block text-sm font-medium text-ink-muted">New Password</label>
+            <input
+              id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+              required placeholder="Enter new password (min 6 chars)" minLength={6}
+              className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm transition-all duration-200"
+            />
+          </div>
+          {passAlert.type && <Alert type={passAlert.type} message={passAlert.message} />}
+          <div className="flex justify-end pt-2">
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              id="save-password-btn" type="submit" disabled={passLoading || !oldPassword || !newPassword}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #a7b5ff 0%, #d9c8ff 100%)" }}
+            >
+              <Lock size={16} />
+              {passLoading ? "Changing…" : "Change Password"}
+            </motion.button>
+          </div>
+        </form>
       </motion.div>
+
+      {/* Avatar Modal */}
+      <AnimatePresence>
+        {avatarModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80 backdrop-blur-sm"
+            onClick={() => setAvatarModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-sm w-full bg-white rounded-3xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setAvatarModalOpen(false)}
+                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-white/50 hover:bg-white rounded-full text-ink transition-colors backdrop-blur-md"
+              >
+                <X size={18} />
+              </button>
+              {avatarPreview || user?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarPreview ?? user?.avatar} alt="Avatar" className="w-full h-auto object-cover aspect-square" />
+              ) : (
+                <div className="w-full aspect-square flex items-center justify-center bg-cream-100 text-slate-soft">No Photo</div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {croppingSrc && (
+          <CropperModal
+            imageSrc={croppingSrc}
+            onClose={() => setCroppingSrc(null)}
+            onCropComplete={handleCropComplete}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

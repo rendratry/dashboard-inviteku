@@ -164,15 +164,26 @@ function TemplatePickerModal({
                         )}
                       </ul>
                       
-                      <button 
-                        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                          isSelected 
-                            ? 'bg-blush-50 text-blush-600' 
-                            : 'bg-cream-100 text-ink hover:bg-cream-200'
-                        }`}
-                      >
-                        {isSelected ? 'Terpilih' : 'Pilih Template'}
-                      </button>
+                      <div className="flex gap-2">
+                        <a
+                          href={`https://inviteku.com/template/preview/${price.template}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 py-2.5 bg-white border border-cream-200 text-ink text-sm font-semibold rounded-xl text-center hover:bg-cream-50 transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <Eye size={16} /> Preview
+                        </a>
+                        <button 
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                            isSelected 
+                              ? 'bg-blush-50 text-blush-600' 
+                              : 'bg-cream-100 text-ink hover:bg-cream-200'
+                          }`}
+                        >
+                          {isSelected ? 'Terpilih' : 'Pilih'}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );

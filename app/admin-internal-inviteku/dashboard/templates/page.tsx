@@ -246,6 +246,57 @@ function FileUploadField({ label, name, currentFileUrl, onFileChange }: { label:
   );
 }
 
+// ── Audio Upload Helper ────────────────────────────────────────────────────
+
+function AudioUploadField({ label, name, currentFileUrl, onFileChange }: { label: string; name: string; currentFileUrl?: string; onFileChange: (f: File | null) => void }) {
+  const [preview, setPreview] = useState<string | null>(currentFileUrl ?? null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setCurrentFile(f);
+      onFileChange(f);
+      const reader = new FileReader();
+      reader.onload = ev => setPreview(ev.target?.result as string);
+      reader.readAsDataURL(f);
+    }
+  };
+
+  const removeFile = () => {
+    setCurrentFile(null);
+    onFileChange(null);
+    setPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium text-ink-muted">{label}</p>
+      {preview ? (
+        <div className="relative border border-cream-300 rounded-xl overflow-hidden group w-full p-4 bg-cream-50 flex flex-col items-center justify-center gap-2">
+          <audio controls src={preview} className="w-full max-w-full" />
+          <div className="flex gap-2 mt-2">
+            <button type="button" onClick={() => inputRef.current?.click()} className="px-3 py-1.5 bg-white border border-cream-200 rounded-lg text-xs font-medium hover:text-blush-500">
+              Ganti File
+            </button>
+            <button type="button" onClick={removeFile} className="px-3 py-1.5 bg-white border border-cream-200 rounded-lg text-xs font-medium hover:text-red-500">
+              Hapus
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div onClick={() => inputRef.current?.click()} className="border-2 border-dashed border-cream-300 rounded-xl h-32 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-blush-300 hover:bg-blush-50/50 transition-all text-slate-soft">
+          <div className="w-8 h-8 rounded-full bg-cream-100 flex items-center justify-center text-cream-500 mb-1">🎵</div>
+          <span className="text-xs">Klik untuk upload MP3/WAV</span>
+        </div>
+      )}
+      <input ref={inputRef} type="file" name={name} accept="audio/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
+
 // ── Modal Form ─────────────────────────────────────────────────────────────
 
 function TemplateFormModal({
@@ -262,10 +313,15 @@ function TemplateFormModal({
     price_disc: template?.price_disc ?? 0,
     is_disc: template?.is_disc ?? false,
     is_published: template?.is_published ?? false,
+    lat: template?.lat ?? "",
+    lang: template?.lang ?? "",
   });
   const [files, setFiles] = useState<Record<string, File | null>>({
     thumbnail: null, background: null,
     top_right: null, top_left: null, bottom_right: null, bottom_left: null,
+    foto_cover: null, foto_pria: null, foto_wanita: null, foto_akad: null, foto_resepsi: null,
+    foto_gallery1: null, foto_gallery2: null, foto_gallery3: null, foto_gallery4: null, foto_gallery5: null, foto_gallery6: null,
+    backsound: null,
   });
   
   const [saving, setSaving] = useState(false);
@@ -283,6 +339,8 @@ function TemplateFormModal({
       fd.append("price_disc", String(formData.price_disc));
       fd.append("is_disc", String(formData.is_disc));
       fd.append("is_published", String(formData.is_published));
+      fd.append("lat", formData.lat);
+      fd.append("lang", formData.lang);
       
       // Append files if they exist
       Object.entries(files).forEach(([key, file]) => {
@@ -367,6 +425,21 @@ function TemplateFormModal({
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-cream-200 pt-6">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-ink-muted">Default Latitude Lokasi</label>
+                <input type="text" value={formData.lat} onChange={e => setFormData({ ...formData, lat: e.target.value })}
+                  placeholder="Misal: -6.200000"
+                  className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-ink-muted">Default Longitude Lokasi</label>
+                <input type="text" value={formData.lang} onChange={e => setFormData({ ...formData, lang: e.target.value })}
+                  placeholder="Misal: 106.816666"
+                  className="input-pastel w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-ink text-sm" />
+              </div>
+            </div>
+
             <div className="border-t border-cream-200 pt-6">
               <h3 className="font-semibold text-ink mb-4 text-sm uppercase tracking-wider">Aset Gambar</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -376,6 +449,25 @@ function TemplateFormModal({
                 <FileUploadField label="Top Right" name="top_right" currentFileUrl={template?.top_right} onFileChange={f => setFiles(prev => ({ ...prev, top_right: f }))} />
                 <FileUploadField label="Bottom Left" name="bottom_left" currentFileUrl={template?.bottom_left} onFileChange={f => setFiles(prev => ({ ...prev, bottom_left: f }))} />
                 <FileUploadField label="Bottom Right" name="bottom_right" currentFileUrl={template?.bottom_right} onFileChange={f => setFiles(prev => ({ ...prev, bottom_right: f }))} />
+              </div>
+            </div>
+
+            <div className="border-t border-cream-200 pt-6">
+              <h3 className="font-semibold text-ink mb-4 text-sm uppercase tracking-wider">Foto Bawaan Preview</h3>
+              <p className="text-xs text-slate-soft mb-4 -mt-2">Foto-foto ini akan digunakan sebagai contoh default saat user melakukan preview template ini.</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <FileUploadField label="Foto Cover" name="foto_cover" currentFileUrl={template?.foto_cover} onFileChange={f => setFiles(prev => ({ ...prev, foto_cover: f }))} />
+                <FileUploadField label="Foto Pria" name="foto_pria" currentFileUrl={template?.foto_pria} onFileChange={f => setFiles(prev => ({ ...prev, foto_pria: f }))} />
+                <FileUploadField label="Foto Wanita" name="foto_wanita" currentFileUrl={template?.foto_wanita} onFileChange={f => setFiles(prev => ({ ...prev, foto_wanita: f }))} />
+                <FileUploadField label="Foto Akad" name="foto_akad" currentFileUrl={template?.foto_akad} onFileChange={f => setFiles(prev => ({ ...prev, foto_akad: f }))} />
+                <FileUploadField label="Foto Resepsi" name="foto_resepsi" currentFileUrl={template?.foto_resepsi} onFileChange={f => setFiles(prev => ({ ...prev, foto_resepsi: f }))} />
+                <FileUploadField label="Foto Gallery 1" name="foto_gallery1" currentFileUrl={template?.foto_gallery1} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery1: f }))} />
+                <FileUploadField label="Foto Gallery 2" name="foto_gallery2" currentFileUrl={template?.foto_gallery2} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery2: f }))} />
+                <FileUploadField label="Foto Gallery 3" name="foto_gallery3" currentFileUrl={template?.foto_gallery3} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery3: f }))} />
+                <FileUploadField label="Foto Gallery 4" name="foto_gallery4" currentFileUrl={template?.foto_gallery4} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery4: f }))} />
+                <FileUploadField label="Foto Gallery 5" name="foto_gallery5" currentFileUrl={template?.foto_gallery5} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery5: f }))} />
+                <FileUploadField label="Foto Gallery 6" name="foto_gallery6" currentFileUrl={template?.foto_gallery6} onFileChange={f => setFiles(prev => ({ ...prev, foto_gallery6: f }))} />
+                <AudioUploadField label="Backsound (MP3/WAV)" name="backsound" currentFileUrl={template?.backsound} onFileChange={f => setFiles(prev => ({ ...prev, backsound: f }))} />
               </div>
             </div>
             

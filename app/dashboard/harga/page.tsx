@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  CreditCard, CheckCircle2, AlertTriangle, Loader2, Sparkles, Tag,
+  CreditCard, CheckCircle2, AlertTriangle, Loader2, Sparkles, Tag, Eye
 } from "lucide-react";
 import Link from "next/link";
 import { getTemplatePricesApi, type TemplatePrice } from "@/lib/api";
@@ -96,13 +96,23 @@ function PriceCard({ price, index }: { price: TemplatePrice; index: number }) {
             </li>
           ))}
         </ul>
-        <Link
-          href="/dashboard/undangan"
-          className="w-full py-2.5 px-4 rounded-xl font-semibold text-white text-sm text-center transition-all duration-200 hover:opacity-90 block"
-          style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}
-        >
-          {t.pricing.selectBtn}
-        </Link>
+        <div className="flex gap-2">
+          <a
+            href={`https://inviteku.com/template/preview/${price.template}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 py-2.5 px-4 bg-white border border-cream-200 text-ink text-sm font-semibold rounded-xl text-center hover:bg-cream-50 transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Eye size={16} /> Preview
+          </a>
+          <Link
+            href="/dashboard/undangan"
+            className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-white text-sm text-center transition-all duration-200 hover:opacity-90 flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${grad.from} 0%, ${grad.to} 100%)` }}
+          >
+            {t.pricing.selectBtn}
+          </Link>
+        </div>
       </div>
     </motion.div>
   );

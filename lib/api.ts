@@ -169,6 +169,14 @@ export async function updateUserApi(token: string, name: string) {
   });
 }
 
+export async function changePasswordApi(token: string, old_password: string, new_password: string) {
+  return apiFetch<ApiResponse>("/change-password", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ old_password, new_password }),
+  });
+}
+
 // ── Overview ───────────────────────────────────────────────────────────────
 
 export interface OverviewResponse {
@@ -689,6 +697,17 @@ export interface TemplatePrice {
   top_left?: string;
   bottom_right?: string;
   bottom_left?: string;
+  foto_cover?: string;
+  foto_pria?: string;
+  foto_wanita?: string;
+  foto_akad?: string;
+  foto_resepsi?: string;
+  foto_gallery1?: string;
+  foto_gallery2?: string;
+  foto_gallery3?: string;
+  foto_gallery4?: string;
+  foto_gallery5?: string;
+  foto_gallery6?: string;
   description?: string;
   features?: string[];
   price?: number;
