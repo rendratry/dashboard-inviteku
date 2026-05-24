@@ -2,9 +2,70 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Eye, EyeOff, Trash2, X, AlertTriangle, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
+import { MessageCircle, Eye, EyeOff, Trash2, X, AlertTriangle, Sparkles, CheckCircle2, Loader2, ChevronDown, Mail } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
-import { getKomentarApi, updateKomentarApi, deleteKomentarApi, getUndanganApi, type Komentar } from "@/lib/api";
+import { getKomentarApi, updateKomentarApi, deleteKomentarApi, getUndanganApi, type Komentar, type Undangan } from "@/lib/api";
+
+// ── Undangan Dropdown ──────────────────────────────────────────────────────
+
+function UndanganSelector({
+  list, loading, selected, onSelect,
+}: {
+  list: Undangan[]; loading: boolean;
+  selected: Undangan | null; onSelect: (u: Undangan) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button id="undangan-selector-komentar" type="button" onClick={() => setOpen((v) => !v)} disabled={loading}
+        className="flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-xl border border-cream-300 bg-white text-sm font-medium text-ink shadow-card hover:border-lavender-300 transition-all duration-200 cursor-pointer disabled:opacity-60 min-w-52">
+        <Mail size={15} className="text-blush-400 flex-shrink-0" />
+        <span className="flex-1 text-left truncate">
+          {loading ? "Memuat undangan…" : selected ? selected.nama : "Pilih Undangan"}
+        </span>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-slate-soft flex-shrink-0">
+          <ChevronDown size={14} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+            <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }} transition={{ duration: 0.18 }}
+              className="absolute left-0 lg:right-0 lg:left-auto top-12 z-20 bg-white rounded-2xl shadow-float border border-cream-200 min-w-64 max-w-xs overflow-hidden">
+              {list.length === 0 ? (
+                <div className="px-4 py-8 text-center">
+                  <Mail size={24} className="text-slate-soft/40 mx-auto mb-2" />
+                  <p className="text-sm text-slate-soft">Belum ada undangan</p>
+                </div>
+              ) : (
+                <div className="py-1.5 max-h-64 overflow-y-auto">
+                  {list.map((u) => (
+                    <button key={u.id} id={`select-undangan-komentar-${u.id}`} type="button"
+                      onClick={() => { onSelect(u); setOpen(false); }}
+                      className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-cream-100 transition-colors cursor-pointer ${selected?.id === u.id ? "bg-blush-50" : ""}`}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+                        <Mail size={14} strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${selected?.id === u.id ? "text-blush-500" : "text-ink"}`}>{u.nama}</p>
+                        {u.key_undangan && <p className="text-xs text-slate-soft font-mono truncate">{u.key_undangan}</p>}
+                      </div>
+                      {selected?.id === u.id && <div className="w-2 h-2 rounded-full bg-blush-400 mt-2 flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 // ── Comment Card ───────────────────────────────────────────────────────────
 
@@ -122,7 +183,8 @@ type FilterType = "all" | "visible" | "hidden";
 
 export default function KomentarPage() {
   const { token } = useAuthStore();
-  const [idUndangan, setIdUndangan] = useState<number | null>(null);
+  const [undanganList, setUndanganList] = useState<Undangan[]>([]);
+  const [selectedUndangan, setSelectedUndangan] = useState<Undangan | null>(null);
   const [comments, setComments] = useState<Komentar[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,9 +200,10 @@ export default function KomentarPage() {
     setError(null);
     getUndanganApi(token)
       .then((res) => {
-        const first = Array.isArray(res.data) ? res.data[0] : null;
-        if (first) {
-          setIdUndangan(first.id);
+        const list = Array.isArray(res.data) ? res.data : [];
+        setUndanganList(list);
+        if (list.length > 0) {
+          setSelectedUndangan(list[0]);
         } else {
           // No undangan yet — show empty state, not error
           setComments([]);
@@ -154,11 +217,11 @@ export default function KomentarPage() {
   }, [token]);
 
   const fetchComments = useCallback(async () => {
-    if (!token || !idUndangan) return;
+    if (!token || !selectedUndangan) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await getKomentarApi(token, idUndangan);
+      const res = await getKomentarApi(token, selectedUndangan.id);
       setComments(Array.isArray(res.data) ? res.data : []);
     } catch (e: unknown) {
       const err = e as { message?: string; status?: number };
@@ -171,7 +234,7 @@ export default function KomentarPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, idUndangan]);
+  }, [token, selectedUndangan]);
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
@@ -208,15 +271,24 @@ export default function KomentarPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-          style={{ background: "linear-gradient(135deg, #9af5db 0%, #b3e3ff 100%)" }}>
-          <MessageCircle size={20} />
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #9af5db 0%, #b3e3ff 100%)" }}>
+            <MessageCircle size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-ink">Komentar</h1>
+            <p className="text-sm text-slate-soft">{comments.length} messages from your guests</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-ink">Komentar</h1>
-          <p className="text-sm text-slate-soft">{comments.length} messages from your guests</p>
-        </div>
+
+        <UndanganSelector
+          list={undanganList}
+          loading={loading && !selectedUndangan}
+          selected={selectedUndangan}
+          onSelect={setSelectedUndangan}
+        />
       </motion.div>
 
       {/* Filter pills */}

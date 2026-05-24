@@ -26,7 +26,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     if (!isAdminAuthenticated || !adminToken) {
-      router.replace("/admin/login");
+      router.replace("/admin-internal-inviteku/login");
     }
   }, [hydrated, isAdminAuthenticated, adminToken, router]);
 
@@ -49,11 +49,11 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 // ── Admin Sidebar ──────────────────────────────────────────────────────────
 
 const adminNavItems = [
-  { href: "/admin/dashboard", exact: true, label: "Overview", icon: <LayoutDashboard size={18} /> },
-  { href: "/admin/dashboard/undangan", label: "Undangan", icon: <Mail size={18} /> },
-  { href: "/admin/dashboard/templates", label: "Template", icon: <Sparkles size={18} /> },
-  { href: "/admin/dashboard/payments", label: "Pembayaran", icon: <CreditCard size={18} /> },
-  { href: "/admin/dashboard/users", label: "Users", icon: <User size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard", exact: true, label: "Overview", icon: <LayoutDashboard size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard/undangan", label: "Undangan", icon: <Mail size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard/templates", label: "Template", icon: <Sparkles size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard/payments", label: "Pembayaran", icon: <CreditCard size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard/users", label: "Users", icon: <User size={18} /> },
 ];
 
 function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -61,7 +61,7 @@ function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: (
   const router = useRouter();
   const { adminLogout } = useAdminStore();
 
-  const handleLogout = () => { adminLogout(); router.push("/admin/login"); };
+  const handleLogout = () => { adminLogout(); router.push("/admin-internal-inviteku/login"); };
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
 
@@ -186,11 +186,11 @@ function AdminSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: (
 
 function AdminTopbar({ pathname, onMenuClick }: { pathname: string; onMenuClick: () => void }) {
   const pageNames: Record<string, string> = {
-    "/admin/dashboard": "Overview",
-    "/admin/dashboard/undangan": "Manajemen Undangan",
-    "/admin/dashboard/templates": "Manajemen Template",
-    "/admin/dashboard/payments": "Manajemen Pembayaran",
-    "/admin/dashboard/users": "Manajemen Users",
+    "/admin-internal-inviteku/dashboard": "Overview",
+    "/admin-internal-inviteku/dashboard/undangan": "Manajemen Undangan",
+    "/admin-internal-inviteku/dashboard/templates": "Manajemen Template",
+    "/admin-internal-inviteku/dashboard/payments": "Manajemen Pembayaran",
+    "/admin-internal-inviteku/dashboard/users": "Manajemen Users",
   };
   const title = pageNames[pathname] ?? "Admin";
 
@@ -222,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Login page: no guard, no sidebar — just render the page as-is
-  if (pathname === "/admin/login") {
+  if (pathname === "/admin-internal-inviteku/login") {
     return <>{children}</>;
   }
 

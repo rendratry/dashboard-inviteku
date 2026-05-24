@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Mail, User, Users, PenSquare, MessageCircle,
-  ChevronLeft, LogOut, Library, CreditCard,
+  ChevronLeft, LogOut, Library, CreditCard, HelpCircle
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n/dictionaries";
@@ -33,6 +33,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { href: "/dashboard/library", label: t.nav.assetsLibrary, icon: <Library size={18} /> },
     { href: "/dashboard/komentar", label: t.nav.comments, icon: <MessageCircle size={18} /> },
     { href: "/dashboard/profile", label: t.nav.profile, icon: <User size={18} /> },
+    { href: "/dashboard/bantuan", label: t.nav.help, icon: <HelpCircle size={18} /> },
   ];
 
   const handleLogout = () => { logout(); router.push("/login"); };

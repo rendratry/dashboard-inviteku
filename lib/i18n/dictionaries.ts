@@ -43,6 +43,7 @@ const navID = {
   assetsLibrary: "Galeri Aset",
   comments: "Komentar",
   profile: "Profil",
+  help: "Bantuan",
 };
 
 const navEN = {
@@ -54,6 +55,7 @@ const navEN = {
   assetsLibrary: "Assets Library",
   comments: "Comments",
   profile: "Profile",
+  help: "Help",
 };
 
 // Login & Register

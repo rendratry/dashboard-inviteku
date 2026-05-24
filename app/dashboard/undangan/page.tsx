@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   Mail, Plus, CheckCircle2, AlertTriangle, Loader2, Link2,
   CalendarClock, Eye, Edit2, CreditCard, X, ImageIcon,
-  Clock, Ban, Send, Sparkles, LayoutGrid, Check,
+  Clock, Ban, Send, Sparkles, LayoutGrid, Check, HelpCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import {
@@ -704,17 +705,26 @@ export default function UndanganPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
-        <div className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-md"
-          style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
-          <Mail size={24} />
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-start lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-md"
+            style={{ background: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)" }}>
+            <Mail size={24} />
+          </div>
+          <div className="max-w-xl">
+            <h1 className="text-2xl font-bold text-ink">Buat Undangan</h1>
+            <p className="text-slate-soft mt-0.5">
+              Kelola dan buat undangan digital baru untuk momen spesial Anda. Anda bisa mencoba semua template secara gratis, pembayaran hanya dilakukan ketika ingin mem-publish undangan.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Buat Undangan</h1>
-          <p className="text-slate-soft mt-0.5">
-            Kelola dan buat undangan digital baru untuk momen spesial Anda. Anda bisa mencoba semua template secara gratis, pembayaran hanya dilakukan ketika ingin mem-publish undangan.
-          </p>
-        </div>
+        
+        <Link href="/dashboard/bantuan" className="shrink-0">
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blush-200 bg-white text-sm font-semibold text-blush-500 hover:bg-blush-50 hover:border-blush-300 shadow-sm transition-all duration-200">
+            <HelpCircle size={16} />
+            Panduan Bantuan
+          </button>
+        </Link>
       </motion.div>
 
       {/* Create Form */}

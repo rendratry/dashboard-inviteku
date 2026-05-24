@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAdminAuthenticated) router.replace("/admin/dashboard");
+    if (isAdminAuthenticated) router.replace("/admin-internal-inviteku/dashboard");
   }, [isAdminAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
       const res = await adminLoginApi(username, password);
       if (res.data?.token) {
         setAdminToken(res.data.token);
-        router.push("/admin/dashboard");
+        router.push("/admin-internal-inviteku/dashboard");
       } else {
         setError("Username atau password salah.");
       }

@@ -5,6 +5,6 @@ import { useRouter } from "next/navigation";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  useEffect(() => { router.replace("/admin/dashboard/payments"); }, [router]);
+  useEffect(() => { router.replace("/admin-internal-inviteku/dashboard/payments"); }, [router]);
   return null;
 }

@@ -530,14 +530,24 @@ function AkadTab({ token, idUndangan }: { token: string; idUndangan: number }) {
       <AlertBanner {...alert} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <FormField label="Title" id="akad-title"><input id="akad-title" type="text" className={inputClass} placeholder="Akad Nikah" value={data?.title ?? ""} onChange={(e) => update("title", e.target.value)} /></FormField>
-        <FormField label="Hari" id="akad-hari"><input id="akad-hari" type="text" className={inputClass} placeholder="Minggu" value={data?.hari ?? ""} onChange={(e) => update("hari", e.target.value)} /></FormField>
-        <FormField label="Tanggal" id="akad-tanggal"><input id="akad-tanggal" type="number" className={inputClass} placeholder="12" value={data?.tanggal ?? ""} onChange={(e) => update("tanggal", Number(e.target.value))} /></FormField>
-        <FormField label="Bulan" id="akad-bulan"><input id="akad-bulan" type="text" className={inputClass} placeholder="Desember" value={data?.bulan ?? ""} onChange={(e) => update("bulan", e.target.value)} /></FormField>
-        <FormField label="Tahun" id="akad-tahun"><input id="akad-tahun" type="number" className={inputClass} placeholder="2026" value={data?.tahun ?? ""} onChange={(e) => update("tahun", Number(e.target.value))} /></FormField>
+        <FormField label="Hari" id="akad-hari">
+          <select id="akad-hari" className={`${inputClass} appearance-none`} value={data?.hari ?? ""} onChange={(e) => update("hari", e.target.value)}>
+            <option value="" disabled>Pilih Hari</option>
+            {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Tanggal" id="akad-tanggal"><input id="akad-tanggal" type="number" className={inputClass} placeholder="12" value={data?.tanggal || ""} onChange={(e) => update("tanggal", Number(e.target.value))} /></FormField>
+        <FormField label="Bulan" id="akad-bulan">
+          <select id="akad-bulan" className={`${inputClass} appearance-none`} value={data?.bulan ?? ""} onChange={(e) => update("bulan", e.target.value)}>
+            <option value="" disabled>Pilih Bulan</option>
+            {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Tahun" id="akad-tahun"><input id="akad-tahun" type="number" className={inputClass} placeholder="2026" value={data?.tahun || ""} onChange={(e) => update("tahun", Number(e.target.value))} /></FormField>
       </div>
       <FormField label="Keterangan" id="akad-ket"><input id="akad-ket" type="text" className={inputClass} placeholder="Pukul 08:00 - 10:00 WIB" value={data?.keterangan ?? ""} onChange={(e) => update("keterangan", e.target.value)} /></FormField>
       <FormField label="Alamat" id="akad-alamat"><textarea id="akad-alamat" rows={2} className={`${inputClass} resize-none`} placeholder="Masjid…" value={data?.alamat ?? ""} onChange={(e) => update("alamat", e.target.value)} /></FormField>
-      <AssetPicker label="Foto Akad" currentId={data?.foto_akad} token={token} type="image" onSelect={(id) => update("foto_akad", id)} />
+      <AssetPicker label="Foto Halaman Akad" currentId={data?.foto_akad} token={token} type="image" onSelect={(id) => update("foto_akad", id)} />
       <SaveButton loading={saving} />
     </form>
   );
@@ -570,14 +580,24 @@ function ResepsiTab({ token, idUndangan }: { token: string; idUndangan: number }
       <AlertBanner {...alert} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <FormField label="Title" id="resepsi-title"><input id="resepsi-title" type="text" className={inputClass} placeholder="Resepsi Pernikahan" value={data?.title ?? ""} onChange={(e) => update("title", e.target.value)} /></FormField>
-        <FormField label="Hari" id="resepsi-hari"><input id="resepsi-hari" type="text" className={inputClass} placeholder="Minggu" value={data?.hari ?? ""} onChange={(e) => update("hari", e.target.value)} /></FormField>
-        <FormField label="Tanggal" id="resepsi-tanggal"><input id="resepsi-tanggal" type="number" className={inputClass} placeholder="12" value={data?.tanggal ?? ""} onChange={(e) => update("tanggal", Number(e.target.value))} /></FormField>
-        <FormField label="Bulan" id="resepsi-bulan"><input id="resepsi-bulan" type="text" className={inputClass} placeholder="Desember" value={data?.bulan ?? ""} onChange={(e) => update("bulan", e.target.value)} /></FormField>
-        <FormField label="Tahun" id="resepsi-tahun"><input id="resepsi-tahun" type="number" className={inputClass} placeholder="2026" value={data?.tahun ?? ""} onChange={(e) => update("tahun", Number(e.target.value))} /></FormField>
+        <FormField label="Hari" id="resepsi-hari">
+          <select id="resepsi-hari" className={`${inputClass} appearance-none`} value={data?.hari ?? ""} onChange={(e) => update("hari", e.target.value)}>
+            <option value="" disabled>Pilih Hari</option>
+            {["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"].map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Tanggal" id="resepsi-tanggal"><input id="resepsi-tanggal" type="number" className={inputClass} placeholder="12" value={data?.tanggal || ""} onChange={(e) => update("tanggal", Number(e.target.value))} /></FormField>
+        <FormField label="Bulan" id="resepsi-bulan">
+          <select id="resepsi-bulan" className={`${inputClass} appearance-none`} value={data?.bulan ?? ""} onChange={(e) => update("bulan", e.target.value)}>
+            <option value="" disabled>Pilih Bulan</option>
+            {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Tahun" id="resepsi-tahun"><input id="resepsi-tahun" type="number" className={inputClass} placeholder="2026" value={data?.tahun || ""} onChange={(e) => update("tahun", Number(e.target.value))} /></FormField>
       </div>
       <FormField label="Keterangan" id="resepsi-ket"><input id="resepsi-ket" type="text" className={inputClass} placeholder="Pukul 11:00 - Selesai" value={data?.keterangan ?? ""} onChange={(e) => update("keterangan", e.target.value)} /></FormField>
       <FormField label="Alamat" id="resepsi-alamat"><textarea id="resepsi-alamat" rows={2} className={`${inputClass} resize-none`} placeholder="Gedung…" value={data?.alamat ?? ""} onChange={(e) => update("alamat", e.target.value)} /></FormField>
-      <AssetPicker label="Foto Resepsi" currentId={data?.foto_resepsi} token={token} type="image" onSelect={(id) => update("foto_resepsi", id)} />
+      <AssetPicker label="Foto Halaman Resepsi" currentId={data?.foto_resepsi} token={token} type="image" onSelect={(id) => update("foto_resepsi", id)} />
       <SaveButton loading={saving} />
     </form>
   );
