@@ -714,6 +714,10 @@ export interface TemplatePrice {
   price_disc?: number;
   is_disc?: boolean;
   is_published?: boolean;
+  lat?: string;
+  lang?: string;
+  backsound?: string;
+  backsound_filename?: string;
 }
 
 export type PaymentStatusValue = "draft" | "pending" | "approved" | "rejected";
