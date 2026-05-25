@@ -61,7 +61,12 @@ async function apiFetch<T>(
     let errorMessage = "Terjadi kesalahan, mohon coba lagi.";
     switch (res.status) {
       case 400: errorMessage = "Data yang dikirim tidak valid. Mohon periksa kembali."; break;
-      case 401: errorMessage = "Sesi Anda tidak valid atau telah berakhir. Silakan login kembali."; break;
+      case 401: 
+        errorMessage = "Sesi Anda tidak valid atau telah berakhir. Silakan login kembali."; 
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth-expired"));
+        }
+        break;
       case 403: errorMessage = "Anda tidak memiliki izin untuk tindakan ini."; break;
       case 404: errorMessage = "Data yang diminta tidak ditemukan."; break;
       case 413: errorMessage = "Ukuran file terlalu besar. Mohon upload file dengan ukuran lebih kecil."; break;

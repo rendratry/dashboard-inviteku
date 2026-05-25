@@ -28,6 +28,14 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     if (!isAdminAuthenticated || !adminToken) {
       router.replace("/admin-internal-inviteku/login");
     }
+
+    const handleAuthExpired = () => {
+      useAdminStore.getState().adminLogout();
+      router.replace("/admin-internal-inviteku/login");
+    };
+
+    window.addEventListener("auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("auth-expired", handleAuthExpired);
   }, [hydrated, isAdminAuthenticated, adminToken, router]);
 
   if (!hydrated || !isAdminAuthenticated) {

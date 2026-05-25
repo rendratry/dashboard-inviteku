@@ -27,6 +27,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated || !token) {
       router.replace("/login");
     }
+
+    const handleAuthExpired = () => {
+      useAuthStore.getState().logout();
+      router.replace("/login");
+    };
+
+    window.addEventListener("auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("auth-expired", handleAuthExpired);
   }, [hydrated, isAuthenticated, token, router]);
 
   // Fetch user profile on mount
