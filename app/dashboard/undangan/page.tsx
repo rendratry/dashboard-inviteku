@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Mail, Plus, CheckCircle2, AlertTriangle, Loader2, Link2,
   CalendarClock, Eye, Edit2, CreditCard, X, ImageIcon,
-  Clock, Ban, Send, Sparkles, LayoutGrid, Check, HelpCircle,
+  Clock, Ban, Send, Sparkles, LayoutGrid, Check, HelpCircle, MessageCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import {
@@ -401,6 +401,24 @@ function CheckoutModal({
           </div>
         </div>
 
+        {/* WhatsApp CTA */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-green-800">Sudah transfer?</p>
+            <p className="text-xs text-green-700 mt-0.5">Kirim bukti transfer ke WhatsApp kami untuk konfirmasi lebih cepat.</p>
+          </div>
+          <a
+            href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.%0ANama: ${undangan.judul_undangan ?? '-'}%0ATemplate: ${undangan.template ?? '-'}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-md hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
+            style={{ background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)" }}
+          >
+            <MessageCircle size={15} />
+            Chat WhatsApp
+          </a>
+        </div>
+
         {/* Upload & Form */}
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-2">
@@ -626,8 +644,19 @@ function UndanganCard({
           )}
 
           {(checkoutDone || status === "pending") && (
-            <div className="flex items-center gap-2 text-sm font-medium text-peach-500 bg-peach-50 px-4 py-2 rounded-xl border border-peach-100">
-              <Clock size={16} className="animate-pulse" /> Menunggu Verifikasi
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-medium text-peach-500 bg-peach-50 px-4 py-2 rounded-xl border border-peach-100">
+                <Clock size={16} className="animate-pulse" /> Menunggu Verifikasi
+              </div>
+              <a
+                href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.\nNama: ${undangan.nama ?? '-'}\nTemplate: ${undangan.template ?? '-'}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+                style={{ background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)" }}
+              >
+                <MessageCircle size={15} /> Konfirmasi WA
+              </a>
             </div>
           )}
         </div>

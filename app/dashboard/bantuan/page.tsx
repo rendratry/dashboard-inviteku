@@ -1,7 +1,40 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { HelpCircle, Sparkles, Image as ImageIcon, CheckCircle, CreditCard, Users, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { HelpCircle, Sparkles, Image as ImageIcon, CheckCircle, CreditCard, Users, MessageSquare, MapPin, Clock, Phone, MessageCircle } from "lucide-react";
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-cream-200 py-4 last:border-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full text-left font-bold text-ink hover:text-lavender-500 transition-colors py-1 cursor-pointer"
+      >
+        <span className="text-sm sm:text-base pr-4">{question}</span>
+        <span className={`transform transition-transform duration-300 text-lavender-400 shrink-0 text-xl font-medium leading-none`}>
+          {isOpen ? "−" : "+"}
+        </span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <p className="text-xs sm:text-sm text-slate-soft mt-2 leading-relaxed">
+              {answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function BantuanPage() {
   const steps = [
@@ -43,6 +76,29 @@ export default function BantuanPage() {
     }
   ];
 
+  const faqs = [
+    {
+      q: "Apakah saya benar-benar bisa mencoba membuat undangan secara gratis?",
+      a: "Tentu saja! Anda bebas mencoba membuat undangan, mengisi data detail, mengunggah foto, dan berganti template undangan sepuasnya tanpa biaya apa pun (100% Gratis). Pembayaran hanya diperlukan ketika Anda siap mempublikasikan (publish) undangan Anda agar aktif secara online."
+    },
+    {
+      q: "Berapa lama masa aktif undangan setelah dipublikasikan?",
+      a: "Setelah undangan Anda resmi dipublikasikan dan pembayaran dikonfirmasi, undangan digital Anda akan aktif selama 1 tahun penuh."
+    },
+    {
+      q: "Apakah saya bisa mengubah data undangan setelah dipublikasikan?",
+      a: "Bisa! Anda tetap dapat merubah detail teks seperti info acara, lokasi, galeri foto, musik latar, serta mengelola daftar tamu kapan saja melalui dashboard, namun pilihan desain template tidak dapat diganti setelah undangan berhasil diterbitkan."
+    },
+    {
+      q: "Apakah tamu undangan bisa mengisi ucapan doa dan RSVP?",
+      a: "Ya, tamu Anda dapat mengisi konfirmasi kehadiran (RSVP) serta menuliskan ucapan doa restu yang akan langsung tampil di halaman undangan dan masuk ke menu Komentar di dashboard Anda secara real-time."
+    },
+    {
+      q: "Metode pembayaran apa saja yang didukung?",
+      a: "Untuk saat ini kami mendukung pembayaran melalui Transfer Bank (manual). Konfirmasi pembayaran dilakukan setelah Anda mengirimkan bukti transfer kepada tim kami."
+    }
+  ];
+
   return (
     <div className="space-y-8 pb-10">
       {/* Header */}
@@ -53,10 +109,11 @@ export default function BantuanPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-ink">Pusat Bantuan</h1>
-          <p className="text-slate-soft">Panduan langkah demi langkah menggunakan Inviteku.</p>
+          <p className="text-slate-soft">Panduan lengkap, FAQ, dan informasi kantor resmi Inviteku.</p>
         </div>
       </motion.div>
 
+      {/* Main Flow Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-card border border-cream-200">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
@@ -70,7 +127,7 @@ export default function BantuanPage() {
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + idx * 0.1 }}
+                transition={{ delay: 0.15 + idx * 0.08 }}
                 className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
               >
                 {/* Icon Marker */}
@@ -90,9 +147,98 @@ export default function BantuanPage() {
           </div>
         </motion.div>
       </div>
-      
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="text-center text-sm text-slate-soft">
-        Masih mengalami kendala? Hubungi tim support kami via WhatsApp.
+
+      {/* FAQ & Contact Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* FAQ Accordions (Span 2) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 shadow-card border border-cream-200"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <HelpCircle size={20} className="text-lavender-500" />
+            <h2 className="text-xl font-bold text-ink">Pertanyaan Populer (FAQ)</h2>
+          </div>
+          <div className="divide-y divide-cream-100">
+            {faqs.map((faq, idx) => (
+              <FaqItem key={idx} question={faq.q} answer={faq.a} />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Address Card (Span 1) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white rounded-3xl p-6 sm:p-8 shadow-card border border-cream-200 flex flex-col justify-between gap-6"
+        >
+          <div className="space-y-4 text-sm text-ink-muted">
+              <div className="flex items-start gap-3">
+                <MapPin size={18} className="text-blush-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-ink">Alamat</p>
+                  <p className="text-slate-soft text-xs mt-0.5 leading-relaxed">
+                    Blabakan, Kec. Mejayan,<br />Kab. Madiun, 63153
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Phone size={18} className="text-blush-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-ink">Telepon / WhatsApp</p>
+                  <p className="text-slate-soft text-xs mt-0.5">0851-7962-4972</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Clock size={18} className="text-lavender-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-ink">Jam Operasional</p>
+                  <p className="text-slate-soft text-xs mt-0.5">
+                    Senin - Sabtu: 08.00 - 17.00 WIB
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          {/* Premium Visual Mock Map */}
+          <div className="relative h-44 rounded-2xl overflow-hidden border border-cream-200 bg-slate-100 flex items-center justify-center">
+            {/* Styled Map Background Grid */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-lavender-100 via-cream-50 to-baby-100 opacity-80" />
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: "radial-gradient(circle, #8b5cf6 1.2px, transparent 1.2px)",
+              backgroundSize: "16px 16px"
+            }} />
+            
+            {/* Visual pulsing indicator */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full bg-blush-100 flex items-center justify-center border-2 border-white shadow-md animate-pulse">
+                <MapPin size={18} className="text-blush-500" />
+              </div>
+              <span className="text-[10px] font-bold text-ink mt-2 bg-white/95 backdrop-blur px-2.5 py-0.5 rounded-full border border-cream-200 shadow-sm font-sans tracking-wide">
+                Mejayan, Madiun
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center pt-4 space-y-3">
+        <p className="text-sm text-slate-soft">Masih mengalami kendala? Hubungi tim support kami via WhatsApp.</p>
+        <a
+          href="https://wa.me/6285179624972"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-white text-sm font-semibold shadow-md hover:opacity-90 transition-opacity"
+          style={{ background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)" }}
+        >
+          <MessageCircle size={18} />
+          Chat WhatsApp — 0851-7962-4972
+        </a>
       </motion.div>
     </div>
   );
