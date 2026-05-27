@@ -494,6 +494,14 @@ function MempelaiTab({ token, idUndangan }: { token: string; idUndangan: number 
         <FormField label="Keluarga Mempelai Pria" id="pria-keluarga"><input id="pria-keluarga" type="text" className={inputClass} placeholder="Bapak & Ibu Montague" value={data?.keluarga_mempelai_pria ?? ""} onChange={(e) => update("keluarga_mempelai_pria", e.target.value)} /></FormField>
         <FormField label="Keluarga Mempelai Wanita" id="wanita-keluarga"><input id="wanita-keluarga" type="text" className={inputClass} placeholder="Bapak & Ibu Capulet" value={data?.keluarga_mempelai_wanita ?? ""} onChange={(e) => update("keluarga_mempelai_wanita", e.target.value)} /></FormField>
       </div>
+      <div className="space-y-5">
+        <FormField label="Salam Pembuka" id="salam-pembuka">
+          <input id="salam-pembuka" type="text" className={inputClass} placeholder="Assalamu'alaikum Wr. Wb." value={data?.salam_pembuka ?? ""} onChange={(e) => update("salam_pembuka", e.target.value)} />
+        </FormField>
+        <FormField label="Kalimat Pengantar" id="kalimat-pengantar">
+          <textarea id="kalimat-pengantar" rows={2} className={`${inputClass} resize-none`} placeholder="Tanpa mengurangi rasa hormat Kami bermaksud mengundang Bapak/Ibu/Saudara/i pada acara pernikahan kami" value={data?.kalimat_pengantar ?? ""} onChange={(e) => update("kalimat_pengantar", e.target.value)} />
+        </FormField>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <AssetPicker label="Foto Mempelai Pria" currentId={data?.foto_mempelai_pria} token={token} type="image" onSelect={(id) => update("foto_mempelai_pria", id)} />
         <AssetPicker label="Foto Mempelai Wanita" currentId={data?.foto_mempelai_wanita} token={token} type="image" onSelect={(id) => update("foto_mempelai_wanita", id)} />

@@ -803,6 +803,8 @@ export interface AssetMempelai {
   keluarga_mempelai_wanita: string;
   foto_mempelai_pria: number;
   foto_mempelai_wanita: number;
+  salam_pembuka?: string;
+  kalimat_pengantar?: string;
 }
 
 export interface AssetAkad {
