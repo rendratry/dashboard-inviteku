@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Edit2, AlertTriangle, Loader2, X, RefreshCw, CheckCircle2,
+  Trash2, RotateCcw
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import {
   adminGetAllUndanganApi, adminUpdateUndanganApi,
+  adminSoftDeleteUndanganApi, adminRestoreUndanganApi,
   getTemplatePricesApi,
   type AdminUndangan, type TemplatePrice,
 } from "@/lib/api";
@@ -89,6 +91,37 @@ function AdminEditModal({
   );
 }
 
+function ConfirmModal({
+  isOpen, title, description, onConfirm, onCancel, confirmText, confirmStyle = "danger", loading
+}: {
+  isOpen: boolean; title: string; description: string; onConfirm: () => void; onCancel: () => void;
+  confirmText: string; confirmStyle?: "danger" | "success"; loading?: boolean;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/30 backdrop-blur-sm">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-white rounded-2xl shadow-float w-full max-w-sm p-6 text-center space-y-4">
+        <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${confirmStyle === "danger" ? "bg-red-100 text-red-500" : "bg-mint-100 text-mint-500"}`}>
+          <AlertTriangle size={24} />
+        </div>
+        <div>
+          <h3 className="font-bold text-ink text-lg">{title}</h3>
+          <p className="text-sm text-slate-soft mt-1">{description}</p>
+        </div>
+        <div className="flex gap-3 justify-center pt-2">
+          <button type="button" onClick={onCancel} disabled={loading}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-100 transition-colors">Batal</button>
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onConfirm} disabled={loading}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-opacity ${confirmStyle === "danger" ? "bg-red-500" : "bg-mint-500"} disabled:opacity-60`}>
+            {loading ? <><Loader2 size={13} className="animate-spin" />Memproses…</> : confirmText}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function UndanganTable({
   undanganList, adminToken, templates, onRefresh,
 }: {
@@ -96,6 +129,8 @@ function UndanganTable({
   adminToken: string; templates: TemplatePrice[]; onRefresh: () => void;
 }) {
   const [editTarget, setEditTarget] = useState<AdminUndangan | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: number; action: "delete" | "restore" } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   if (undanganList.length === 0) {
     return (
@@ -108,6 +143,24 @@ function UndanganTable({
   }
 
   const handleDone = () => { setEditTarget(null); onRefresh(); };
+
+  const confirmAction = async () => {
+    if (!confirmTarget) return;
+    setActionLoading(true);
+    try {
+      if (confirmTarget.action === "delete") {
+        await adminSoftDeleteUndanganApi(adminToken, confirmTarget.id);
+      } else {
+        await adminRestoreUndanganApi(adminToken, confirmTarget.id);
+      }
+      setConfirmTarget(null);
+      onRefresh();
+    } catch (e: any) {
+      alert(e.message || "Gagal memproses undangan");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <>
@@ -132,6 +185,11 @@ function UndanganTable({
                   className="border-b border-cream-100 table-row-hover">
                   <td className="px-5 py-4">
                     <span className="font-mono text-xs text-lavender-500 font-semibold">#{u.id}</span>
+                    {u.is_deleted && (
+                      <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-red-100 text-red-500 border border-red-200">
+                        TERHAPUS
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <p className="font-medium text-ink">{u.nama ?? "—"}</p>
@@ -161,11 +219,27 @@ function UndanganTable({
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      onClick={() => setEditTarget(u)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-cream-300 text-ink-muted hover:bg-cream-100 transition-all">
-                      <Edit2 size={11} />Edit
-                    </motion.button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => setEditTarget(u)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-cream-300 text-ink-muted hover:bg-cream-100 transition-all">
+                        <Edit2 size={11} />Edit
+                      </motion.button>
+                      
+                      {u.is_deleted ? (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => setConfirmTarget({ id: u.id, action: "restore" })}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-mint-200 text-mint-600 bg-mint-50 hover:bg-mint-100 transition-all">
+                          <RotateCcw size={11} />Pulihkan
+                        </motion.button>
+                      ) : (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => setConfirmTarget({ id: u.id, action: "delete" })}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 transition-all">
+                          <Trash2 size={11} />Hapus
+                        </motion.button>
+                      )}
+                    </div>
                   </td>
                 </motion.tr>
               ))}
@@ -180,6 +254,25 @@ function UndanganTable({
             onClose={() => setEditTarget(null)} onDone={handleDone} />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {confirmTarget && (
+          <ConfirmModal
+            isOpen={true}
+            title={confirmTarget.action === "delete" ? "Hapus Undangan?" : "Pulihkan Undangan?"}
+            description={
+              confirmTarget.action === "delete"
+                ? "Data akan disembunyikan dan undangan ini tidak dapat diakses publik. Anda masih bisa memulihkannya kembali nanti."
+                : "Undangan akan dipulihkan dan dapat diakses kembali oleh pengguna dan publik."
+            }
+            confirmText={confirmTarget.action === "delete" ? "Hapus" : "Pulihkan"}
+            confirmStyle={confirmTarget.action === "delete" ? "danger" : "success"}
+            onCancel={() => setConfirmTarget(null)}
+            onConfirm={confirmAction}
+            loading={actionLoading}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -188,6 +281,7 @@ export default function AdminUndanganPage() {
   const { adminToken } = useAdminStore();
   const [undanganList, setUndanganList] = useState<AdminUndangan[]>([]);
   const [templates, setTemplates] = useState<TemplatePrice[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -221,11 +315,20 @@ export default function AdminUndanganPage() {
             <p className="text-sm text-slate-soft">Kelola semua undangan yang dibuat oleh user</p>
           </div>
         </div>
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={fetchData} disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-cream-300 text-ink-muted hover:bg-cream-100 transition-all disabled:opacity-50">
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />Refresh
-        </motion.button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl shadow-sm border border-cream-200">
+            <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${showDeleted ? 'bg-lavender-400' : 'bg-slate-soft/30'}`}>
+              <motion.div layout className="w-3.5 h-3.5 bg-white rounded-full shadow-sm" style={{ x: showDeleted ? 20 : 0 }} />
+            </div>
+            <span className="text-sm font-medium text-ink-muted">Tampilkan Terhapus</span>
+            <input type="checkbox" className="hidden" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+          </label>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={fetchData} disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-cream-300 bg-white text-ink-muted hover:bg-cream-100 transition-all disabled:opacity-50">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />Refresh
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Stats */}
@@ -262,7 +365,7 @@ export default function AdminUndanganPage() {
         </div>
       ) : (
         <UndanganTable
-          undanganList={undanganList}
+          undanganList={undanganList.filter(u => showDeleted ? u.is_deleted : !u.is_deleted)}
           adminToken={adminToken!}
           templates={templates}
           onRefresh={fetchData}

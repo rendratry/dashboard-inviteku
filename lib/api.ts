@@ -675,6 +675,7 @@ export interface Undangan {
   exp?: string;
   id_user?: string;
   is_published?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface AdminUndangan extends Undangan {
@@ -953,3 +954,17 @@ export async function getQuotesAssetsApi(token: string, idUndangan: number) {
     headers: authHeaders(token),
   });
 }
+
+export const adminSoftDeleteUndanganApi = (token: string, id: number) => {
+  return apiFetch<ApiResponse>(`/admin/undangan/${id}/delete`, {
+    method: "PUT",
+    headers: authHeaders(token),
+  });
+};
+
+export const adminRestoreUndanganApi = (token: string, id: number) => {
+  return apiFetch<ApiResponse>(`/admin/undangan/${id}/restore`, {
+    method: "PUT",
+    headers: authHeaders(token),
+  });
+};
