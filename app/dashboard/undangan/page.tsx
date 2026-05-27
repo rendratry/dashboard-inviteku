@@ -408,7 +408,7 @@ function CheckoutModal({
             <p className="text-xs text-green-700 mt-0.5">Kirim bukti transfer ke WhatsApp kami untuk konfirmasi lebih cepat.</p>
           </div>
           <a
-            href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.%0ANama: ${undangan.judul_undangan ?? '-'}%0ATemplate: ${undangan.template ?? '-'}`)}`}
+            href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.%0ANama: ${undangan.nama ?? '-'}%0ATemplate: ${undangan.template ?? '-'}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-md hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
