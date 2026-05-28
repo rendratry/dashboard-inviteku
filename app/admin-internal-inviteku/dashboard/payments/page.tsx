@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, CheckCircle2, AlertTriangle, Loader2, X,
   ThumbsUp, ThumbsDown, Edit2, RefreshCw, Clock, Ban, Eye,
+  TrendingUp, DollarSign, Wallet, Tag, ArrowUpRight,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import {
@@ -16,20 +17,27 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function formatDate(val?: string) {
+function formatDate(val?: string | number) {
   if (!val) return "—";
   const ms = Number(val);
-  const d = isNaN(ms) ? new Date(val) : new Date(ms);
+  const d = isNaN(ms) ? new Date(val as string) : new Date(ms);
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatRupiah(v?: number) {
+  if (!v) return "—";
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(v);
 }
 
 // ── Status Badge ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+    paid:     { label: "Paid", cls: "bg-mint-100 text-mint-500 border border-mint-200", icon: <CheckCircle2 size={10} /> },
     approved: { label: "Approved", cls: "bg-mint-100 text-mint-500 border border-mint-200", icon: <CheckCircle2 size={10} /> },
     pending:  { label: "Pending", cls: "bg-peach-100 text-peach-500 border border-peach-200", icon: <Clock size={10} /> },
     rejected: { label: "Rejected", cls: "bg-red-50 text-red-500 border border-red-100", icon: <Ban size={10} /> },
+    failed:   { label: "Failed", cls: "bg-cream-200 text-slate-soft border border-cream-300", icon: <X size={10} /> },
     draft:    { label: "Draft", cls: "bg-cream-200 text-slate-soft border border-cream-300", icon: null },
   };
   const s = map[status] ?? map.draft;
@@ -37,6 +45,76 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${s.cls}`}>
       {s.icon}{s.label}
     </span>
+  );
+}
+
+// ── Revenue Stats Card ─────────────────────────────────────────────────────
+
+function RevenueStats({ payments }: { payments: AdminPayment[] }) {
+  const paid = payments.filter(p => p.status === "paid" || p.status === "approved");
+  const totalRevenue = paid.reduce((s, p) => s + (p.amount ?? 0), 0);
+  const totalDiscount = paid.reduce((s, p) => s + (p.discount_amount ?? 0), 0);
+  const totalGross = totalRevenue + totalDiscount; // sebelum diskon
+  const voucherUsed = paid.filter(p => (p.voucher_id ?? 0) > 0).length;
+
+  const stats = [
+    {
+      label: "Total Pendapatan",
+      value: formatRupiah(totalRevenue),
+      sub: `dari ${paid.length} transaksi`,
+      icon: <Wallet size={20} />,
+      gradient: "linear-gradient(135deg, #9af5db 0%, #14b894 100%)",
+      color: "#14b894",
+    },
+    {
+      label: "Sebelum Diskon",
+      value: formatRupiah(totalGross),
+      sub: "harga template asli",
+      icon: <TrendingUp size={20} />,
+      gradient: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)",
+      color: "#8b5cf6",
+    },
+    {
+      label: "Total Diskon Voucher",
+      value: formatRupiah(totalDiscount),
+      sub: `${voucherUsed} transaksi pakai voucher`,
+      icon: <Tag size={20} />,
+      gradient: "linear-gradient(135deg, #ff9fb5 0%, #ffb06a 100%)",
+      color: "#f97316",
+    },
+    {
+      label: "Rata-rata per Transaksi",
+      value: paid.length > 0 ? formatRupiah(Math.round(totalRevenue / paid.length)) : "—",
+      sub: "rata-rata pendapatan",
+      icon: <DollarSign size={20} />,
+      gradient: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)",
+      color: "#ec4899",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {stats.map((s, i) => (
+        <motion.div key={s.label}
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.07 }}
+          className="bg-white rounded-2xl p-5 shadow-card relative overflow-hidden">
+          {/* bg accent */}
+          <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-10 -translate-y-4 translate-x-4"
+            style={{ background: s.gradient }} />
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+              style={{ background: s.gradient }}>
+              {s.icon}
+            </div>
+            <ArrowUpRight size={14} className="text-slate-soft" />
+          </div>
+          <p className="text-2xl font-extrabold text-ink tracking-tight">{s.value}</p>
+          <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider mt-1">{s.label}</p>
+          <p className="text-[11px] text-slate-soft mt-0.5">{s.sub}</p>
+        </motion.div>
+      ))}
+    </div>
   );
 }
 
@@ -72,10 +150,15 @@ function VerifyModal({
           <button onClick={onClose} className="text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
         </div>
 
-        <div className="bg-cream-50 rounded-xl p-4 space-y-1 border border-cream-300 text-sm">
+        <div className="bg-cream-50 rounded-xl p-4 space-y-1.5 border border-cream-300 text-sm">
           <p className="text-slate-soft">Order <span className="font-mono font-semibold text-ink">#{payment.id}</span></p>
           <p className="text-slate-soft">Undangan: <span className="font-semibold text-ink">{payment.nama_undangan ?? `#${payment.id_undangan}`}</span></p>
           {payment.user_name && <p className="text-slate-soft">User: <span className="font-semibold text-ink">{payment.user_name}</span></p>}
+          {payment.amount && (
+            <p className="text-slate-soft">Jumlah: <span className="font-bold text-mint-600 text-base">{formatRupiah(payment.amount)}</span>
+              {(payment.discount_amount ?? 0) > 0 && <span className="text-xs text-peach-500 ml-1">(diskon {formatRupiah(payment.discount_amount)})</span>}
+            </p>
+          )}
           {payment.bukti_transfer && (
             <a href={payment.bukti_transfer} target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs text-lavender-500 hover:underline mt-1">
@@ -112,7 +195,7 @@ function VerifyModal({
   );
 }
 
-// ── Admin Edit Undangan Modal ───────────────────────────────────────────────
+// ── Admin Edit Modal ───────────────────────────────────────────────────────
 
 function AdminEditModal({
   payment, adminToken, templates, onClose, onDone,
@@ -130,9 +213,7 @@ function AdminEditModal({
     e.preventDefault();
     setSaving(true); setErr(null);
     try {
-      await adminUpdateUndanganApi(adminToken, {
-        id_undangan: payment.id_undangan, nama, template, note,
-      });
+      await adminUpdateUndanganApi(adminToken, { id_undangan: payment.id_undangan, nama, template, note });
       onDone();
     } catch (e: unknown) {
       setErr((e as { message?: string })?.message ?? "Gagal menyimpan.");
@@ -221,13 +302,9 @@ function PaymentTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-cream-200 bg-cream-50">
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Order</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Undangan</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">User</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Template</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Tanggal</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider">Aksi</th>
+                {["Order", "Undangan", "User", "Template", "Jumlah", "Diskon", "Metode", "Status", "Tgl Bayar", "Aksi"].map(h => (
+                  <th key={h} className="text-left px-4 py-3.5 text-xs font-semibold text-slate-soft uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -236,11 +313,14 @@ function PaymentTable({
                   initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
                   className="border-b border-cream-100 table-row-hover">
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-4">
                     <span className="font-mono text-xs text-lavender-500 font-semibold">#{p.id}</span>
                   </td>
-                  <td className="px-5 py-4">
-                    <p className="font-medium text-ink">{p.nama_undangan ?? `Undangan #${p.id_undangan}`}</p>
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-ink max-w-[140px] truncate">{p.nama_undangan ?? `Undangan #${p.id_undangan}`}</p>
+                    {p.requested_key && (
+                      <p className="text-[10px] text-slate-soft font-mono">/{p.requested_key}</p>
+                    )}
                     {p.bukti_transfer && (
                       <a href={p.bukti_transfer} target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-lavender-500 hover:underline mt-0.5">
@@ -248,18 +328,39 @@ function PaymentTable({
                       </a>
                     )}
                   </td>
-                  <td className="px-5 py-4">
-                    <p className="text-ink">{p.user_name ?? "—"}</p>
-                    <p className="text-xs text-slate-soft">{p.user_email ?? ""}</p>
+                  <td className="px-4 py-4">
+                    <p className="text-ink text-xs font-medium">{p.user_name ?? "—"}</p>
+                    <p className="text-[10px] text-slate-soft">{p.user_email ?? ""}</p>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-4">
                     <span className="text-xs bg-cream-100 px-2 py-0.5 rounded-lg text-slate-soft font-mono">
                       {p.template ?? "—"}
                     </span>
                   </td>
-                  <td className="px-5 py-4"><StatusBadge status={p.status} /></td>
-                  <td className="px-5 py-4 text-xs text-slate-soft whitespace-nowrap">{formatDate(p.created_at)}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-4">
+                    {p.amount ? (
+                      <span className="font-bold text-mint-700 text-sm">{formatRupiah(p.amount)}</span>
+                    ) : <span className="text-slate-soft">—</span>}
+                  </td>
+                  <td className="px-4 py-4">
+                    {(p.discount_amount ?? 0) > 0 ? (
+                      <span className="text-xs font-semibold text-peach-600 bg-peach-50 px-2 py-0.5 rounded-full">
+                        -{formatRupiah(p.discount_amount)}
+                      </span>
+                    ) : <span className="text-slate-soft text-xs">—</span>}
+                  </td>
+                  <td className="px-4 py-4">
+                    {p.payment_method ? (
+                      <span className="text-xs bg-lavender-50 text-lavender-600 px-2 py-0.5 rounded-full font-medium capitalize">
+                        {p.payment_method}
+                      </span>
+                    ) : <span className="text-slate-soft text-xs">—</span>}
+                  </td>
+                  <td className="px-4 py-4"><StatusBadge status={p.status} /></td>
+                  <td className="px-4 py-4 text-xs text-slate-soft whitespace-nowrap">
+                    {p.verified_at ? formatDate(p.verified_at) : formatDate(p.created_at)}
+                  </td>
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       {showActions && (
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -276,7 +377,7 @@ function PaymentTable({
                       </motion.button>
                     </div>
                     {p.note && (
-                      <p className="text-xs text-slate-soft mt-1 max-w-[160px] truncate" title={p.note}>
+                      <p className="text-xs text-slate-soft mt-1 max-w-[140px] truncate" title={p.note}>
                         Note: {p.note}
                       </p>
                     )}
@@ -304,13 +405,13 @@ function PaymentTable({
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 
-type Tab = "pending" | "approved" | "rejected" | "all";
+type Tab = "pending" | "paid" | "rejected" | "all";
 
 export default function AdminPaymentsPage() {
   const { adminToken } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<Tab>("pending");
+  const [activeTab, setActiveTab] = useState<Tab>("paid");
   const [pendingPayments, setPendingPayments] = useState<AdminPayment[]>([]);
-  const [approvedPayments, setApprovedPayments] = useState<AdminPayment[]>([]);
+  const [paidPayments, setPaidPayments] = useState<AdminPayment[]>([]);
   const [rejectedPayments, setRejectedPayments] = useState<AdminPayment[]>([]);
   const [allPayments, setAllPayments] = useState<AdminPayment[]>([]);
   const [templates, setTemplates] = useState<TemplatePrice[]>([]);
@@ -329,7 +430,7 @@ export default function AdminPaymentsPage() {
         getTemplatePricesApi(),
       ]);
       setPendingPayments(Array.isArray(pendRes.data) ? pendRes.data : []);
-      setApprovedPayments(Array.isArray(appRes.data) ? appRes.data : []);
+      setPaidPayments(Array.isArray(appRes.data) ? appRes.data : []);
       setRejectedPayments(Array.isArray(rejRes.data) ? rejRes.data : []);
       setAllPayments(Array.isArray(allRes.data) ? allRes.data : []);
       setTemplates(Array.isArray(tplRes.data) ? tplRes.data : []);
@@ -341,11 +442,17 @@ export default function AdminPaymentsPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: "paid",    label: "Paid",    count: paidPayments.length },
     { key: "pending", label: "Pending", count: pendingPayments.length },
-    { key: "approved", label: "Approved", count: approvedPayments.length },
-    { key: "rejected", label: "Rejected", count: rejectedPayments.length },
-    { key: "all", label: "Semua Pembayaran", count: allPayments.length },
+    { key: "rejected",label: "Rejected",count: rejectedPayments.length },
+    { key: "all",     label: "Semua",   count: allPayments.length },
   ];
+
+  const currentPayments =
+    activeTab === "pending"  ? pendingPayments  :
+    activeTab === "paid"     ? paidPayments     :
+    activeTab === "rejected" ? rejectedPayments :
+    allPayments;
 
   return (
     <div className="space-y-6">
@@ -358,7 +465,7 @@ export default function AdminPaymentsPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-ink">Manajemen Pembayaran</h1>
-            <p className="text-sm text-slate-soft">Verifikasi dan kelola transaksi pembayaran user</p>
+            <p className="text-sm text-slate-soft">Statistik pendapatan & kelola transaksi</p>
           </div>
         </div>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -368,17 +475,23 @@ export default function AdminPaymentsPage() {
         </motion.button>
       </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* Revenue Stats — dari transaksi paid */}
+      {!loading && !error && <RevenueStats payments={paidPayments} />}
+
+      {/* Status Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Pending", value: pendingPayments.length, color: "#ffb06a" },
-          { label: "Approved", value: approvedPayments.length, color: "#14b894" },
-          { label: "Rejected", value: rejectedPayments.length, color: "#f95c7e" },
-          { label: "Total", value: allPayments.length, color: "#8b5cf6" },
+          { label: "Pending", value: pendingPayments.length, color: "#ffb06a", tab: "pending" as Tab },
+          { label: "Paid", value: paidPayments.length, color: "#14b894", tab: "paid" as Tab },
+          { label: "Rejected/Failed", value: rejectedPayments.length, color: "#f95c7e", tab: "rejected" as Tab },
+          { label: "Total Order", value: allPayments.length, color: "#8b5cf6", tab: "all" as Tab },
         ].map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-            className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
+          <motion.div key={s.label}
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            onClick={() => setActiveTab(s.tab)}
+            className={`bg-white rounded-2xl p-4 shadow-card flex items-center gap-3 cursor-pointer transition-all duration-200 ${activeTab === s.tab ? "ring-2 ring-offset-1" : "hover:shadow-float"}`}
+            style={{ '--tw-ring-color': s.color } as React.CSSProperties}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: s.color + "22", color: s.color }}>
               <CreditCard size={18} />
@@ -420,15 +533,11 @@ export default function AdminPaymentsPage() {
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          <motion.div key={activeTab}
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
             <PaymentTable
-              payments={
-                activeTab === "pending" ? pendingPayments :
-                activeTab === "approved" ? approvedPayments :
-                activeTab === "rejected" ? rejectedPayments :
-                allPayments
-              }
+              payments={currentPayments}
               showActions={activeTab === "pending"}
               adminToken={adminToken!}
               templates={templates}

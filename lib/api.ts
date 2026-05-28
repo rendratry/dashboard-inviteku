@@ -830,14 +830,21 @@ export interface PaymentStatus {
 export interface AdminPayment {
   id: number;
   id_undangan: number;
+  id_user?: string;
   nama_undangan?: string;
   user_name?: string;
   user_email?: string;
   template?: string;
   status: PaymentStatusValue;
+  amount?: number;
+  discount_amount?: number;
+  voucher_id?: number;
+  payment_method?: string;
+  requested_key?: string;
   bukti_transfer?: string;
   note?: string;
   created_at?: string;
+  verified_at?: number;
   updated_at?: string;
 }
 
