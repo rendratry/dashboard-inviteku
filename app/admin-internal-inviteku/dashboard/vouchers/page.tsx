@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Tag, Plus, Trash2, Loader2, X, AlertTriangle, RefreshCw,
-  CheckCircle2, Percent, DollarSign, Users, Clock, ToggleLeft, ToggleRight,
+  CheckCircle2, Percent, Banknote, Users, Clock, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import {
@@ -106,7 +106,7 @@ function CreateVoucherModal({
                 <button type="button"
                   onClick={() => set("type", "fixed")}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold border transition-all ${form.type === "fixed" ? "bg-peach-100 border-peach-300 text-peach-700" : "border-cream-300 text-slate-soft hover:bg-cream-50"}`}>
-                  <DollarSign size={14} /> Fixed
+                  <Banknote size={14} /> Fixed
                 </button>
               </div>
             </div>
@@ -392,7 +392,7 @@ export default function AdminVouchersPage() {
                       <div className="flex items-center gap-1.5">
                         {v.type === "percent"
                           ? <span className="flex items-center gap-1 text-xs bg-lavender-100 text-lavender-700 px-2 py-0.5 rounded-full font-semibold"><Percent size={10} />{v.value}%</span>
-                          : <span className="flex items-center gap-1 text-xs bg-peach-100 text-peach-700 px-2 py-0.5 rounded-full font-semibold"><DollarSign size={10} />{formatRupiah(v.value)}</span>
+                          : <span className="flex items-center gap-1 text-xs bg-peach-100 text-peach-700 px-2 py-0.5 rounded-full font-semibold"><Banknote size={10} />{formatRupiah(v.value)}</span>
                         }
                         {v.type === "percent" && v.max_discount > 0 && (
                           <span className="text-[10px] text-slate-soft">maks. {formatRupiah(v.max_discount)}</span>

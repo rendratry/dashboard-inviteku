@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, CheckCircle2, AlertTriangle, Loader2, X,
   ThumbsUp, ThumbsDown, Edit2, RefreshCw, Clock, Ban, Eye,
-  TrendingUp, DollarSign, Wallet, Tag, ArrowUpRight,
+  TrendingUp, Banknote, Wallet, Tag, ArrowUpRight,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 import {
@@ -86,7 +86,7 @@ function RevenueStats({ payments }: { payments: AdminPayment[] }) {
       label: "Rata-rata per Transaksi",
       value: paid.length > 0 ? formatRupiah(Math.round(totalRevenue / paid.length)) : "—",
       sub: "rata-rata pendapatan",
-      icon: <DollarSign size={20} />,
+      icon: <Banknote size={20} />,
       gradient: "linear-gradient(135deg, #ffc2cf 0%, #d9c8ff 100%)",
       color: "#ec4899",
     },
