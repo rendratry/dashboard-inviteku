@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   Mail, Plus, CheckCircle2, AlertTriangle, Loader2, Link2,
-  CalendarClock, Eye, Edit2, CreditCard, X, ImageIcon,
-  Clock, Ban, Send, Sparkles, LayoutGrid, Check, HelpCircle, MessageCircle,
+  CalendarClock, Eye, Edit2, CreditCard, X,
+  Clock, Ban, Sparkles, LayoutGrid, Check, HelpCircle, MessageCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import {
-  createUndanganApi, getUndanganApi, getPaymentStatusApi,
+  createUndanganApi, getUndanganApi, getPaymentStatusApi, cancelOrderApi,
   updateUndanganApi, requestPublishApi, getTemplatePricesApi,
-  generatePreviewTokenApi,
-  type Undangan, type PaymentStatus, type TemplatePrice,
+  generatePreviewTokenApi, validateVoucherApi,
+  type Undangan, type PaymentStatus, type TemplatePrice, type VoucherValidateResult,
 } from "@/lib/api";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -318,47 +318,78 @@ function CheckoutModal({
   undangan: Undangan; templates: TemplatePrice[]; token: string;
   onClose: () => void; onSuccess: () => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [customKey, setCustomKey] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherInput, setVoucherInput] = useState("");
+  const [voucherResult, setVoucherResult] = useState<VoucherValidateResult | null>(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherErr, setVoucherErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const templatePrice = templates.find(t => t.template === undangan.template);
+  const originalPrice: number = templatePrice
+    ? (templatePrice.is_disc && templatePrice.price_disc && templatePrice.price_disc > 0
+      ? templatePrice.price_disc
+      : (templatePrice.price ?? templatePrice.effective_price))
+    : 0;
 
-  const handleFile = (f: File) => {
-    setFile(f);
-    const reader = new FileReader();
-    reader.onload = e => setPreview(e.target?.result as string);
-    reader.readAsDataURL(f);
+  const finalPrice = voucherResult ? voucherResult.final_price : originalPrice;
+
+  const handleApplyVoucher = async () => {
+    if (!voucherInput.trim()) return;
+    setVoucherLoading(true); setVoucherErr(null); setVoucherResult(null);
+    try {
+      const res = await validateVoucherApi(token, voucherInput.trim(), originalPrice);
+      setVoucherResult(res.data);
+      setVoucherCode(voucherInput.trim().toUpperCase());
+    } catch (e: unknown) {
+      setVoucherErr((e as { message?: string })?.message ?? "Kode voucher tidak valid.");
+    } finally { setVoucherLoading(false); }
+  };
+
+  const handleRemoveVoucher = () => {
+    setVoucherResult(null);
+    setVoucherCode("");
+    setVoucherInput("");
+    setVoucherErr(null);
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !customKey.trim()) {
-      setErr("Silakan isi Key Undangan dan upload Bukti Transfer.");
+    if (!customKey.trim() || !buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
+      setErr("Semua field wajib diisi.");
       return;
     }
-    setUploading(true); setErr(null);
+    setLoading(true); setErr(null);
     try {
-      const fd = new FormData();
-      fd.append("id_undangan", String(undangan.id));
-      fd.append("key", customKey.trim());
-      fd.append("bukti_transfer", file);
-      await requestPublishApi(token, fd);
-      onSuccess();
+      const result = await requestPublishApi(token, {
+        id_undangan: undangan.id,
+        key: customKey.trim(),
+        buyer_name: buyerName.trim(),
+        buyer_email: buyerEmail.trim(),
+        buyer_phone: buyerPhone.trim(),
+        voucher_code: voucherCode,
+      });
+      if (result.data?.payment_url) {
+        window.location.href = result.data.payment_url;
+      } else {
+        onSuccess();
+      }
     } catch (e: unknown) {
-      setErr((e as { message?: string })?.message ?? "Gagal mengirim.");
-    } finally { setUploading(false); }
+      setErr((e as { message?: string })?.message ?? "Gagal membuat sesi pembayaran.");
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-cream-200 pb-4">
-          <h2 className="font-bold text-ink flex items-center gap-2 text-lg"><CreditCard size={18} className="text-blush-400" />Request Publish</h2>
+          <h2 className="font-bold text-ink flex items-center gap-2 text-lg"><CreditCard size={18} className="text-blush-400" />Bayar & Publish</h2>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-cream-100 text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
         </div>
 
@@ -372,119 +403,117 @@ function CheckoutModal({
               <Sparkles className="text-white" size={20} />
             </div>
           )}
-          <div>
+          <div className="flex-1">
             <p className="text-xs text-slate-soft mb-0.5">Template {undangan.template}</p>
             <p className="font-semibold text-ink text-sm">{templatePrice?.name_template ?? "—"}</p>
-            {templatePrice && (
-              <div className="flex items-center gap-2 mt-0.5">
-                {templatePrice.is_disc && templatePrice.price_disc && templatePrice.price_disc > 0 ? (
-                  <>
-                    <p className="text-lg font-extrabold text-blush-500">{formatRupiah(templatePrice.price_disc)}</p>
-                    <p className="text-xs line-through text-slate-soft">{formatRupiah(templatePrice.price ?? 0)}</p>
-                  </>
-                ) : (
-                  <p className="text-lg font-extrabold text-blush-500">{formatRupiah(templatePrice.price ?? templatePrice.effective_price)}</p>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-1">
+              {voucherResult ? (
+                <>
+                  <p className="text-lg font-extrabold text-mint-600">{formatRupiah(voucherResult.final_price)}</p>
+                  <p className="text-xs line-through text-slate-soft">{formatRupiah(originalPrice)}</p>
+                  <span className="text-xs bg-mint-100 text-mint-600 px-1.5 py-0.5 rounded-full font-semibold">
+                    -{formatRupiah(voucherResult.discount_amount)}
+                  </span>
+                </>
+              ) : (
+                <p className="text-lg font-extrabold text-blush-500">{formatRupiah(originalPrice)}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Bank Info */}
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Instruksi Pembayaran</p>
-          <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-4 space-y-2.5 text-sm">
-            <div className="flex justify-between"><span className="text-slate-soft">Bank</span><span className="font-semibold text-ink">BCA</span></div>
-            <div className="flex justify-between"><span className="text-slate-soft">No. Rekening</span><span className="font-semibold text-ink font-mono text-base">5721813143</span></div>
-            <div className="flex justify-between"><span className="text-slate-soft">Atas Nama</span><span className="font-semibold text-ink">Rendra Tri Kusuma</span></div>
-            {templatePrice && <div className="flex justify-between border-t border-lavender-200 pt-2.5 mt-1"><span className="text-slate-soft">Jumlah Transfer</span><span className="font-bold text-blush-500 text-lg">{formatRupiah(templatePrice.effective_price)}</span></div>}
-          </div>
+        {/* iPaymu Info */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3">
+          <HelpCircle size={16} className="text-blue-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-blue-700">Pembayaran dilakukan secara otomatis melalui iPaymu. Undangan akan dipublish otomatis setelah pembayaran berhasil.</p>
         </div>
 
-        {/* WhatsApp CTA */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-green-800">Sudah transfer?</p>
-            <p className="text-xs text-green-700 mt-0.5">Kirim bukti transfer ke WhatsApp kami untuk konfirmasi lebih cepat.</p>
-          </div>
-          <a
-            href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.%0ANama: ${undangan.nama ?? '-'}%0ATemplate: ${undangan.template ?? '-'}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-md hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
-            style={{ background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)" }}
-          >
-            <MessageCircle size={15} />
-            Chat WhatsApp
-          </a>
-        </div>
-
-        {/* Upload & Form */}
-        <form onSubmit={submit} className="space-y-5">
-          <div className="space-y-2">
-            <label htmlFor="custom-key" className="block text-xs font-semibold text-slate-soft uppercase tracking-wider">
-              Key Undangan (URL)
-            </label>
+        <form onSubmit={submit} className="space-y-4">
+          {/* Key Undangan */}
+          <div className="space-y-1.5">
+            <label htmlFor="custom-key" className="block text-xs font-semibold text-slate-soft uppercase tracking-wider">Key Undangan (URL)</label>
             <div className="flex bg-cream-50 rounded-xl border border-cream-300 overflow-hidden focus-within:border-blush-300 focus-within:ring-2 focus-within:ring-blush-100 transition-all">
-              <span className="bg-cream-100 px-3 py-3 text-slate-soft text-sm flex items-center border-r border-cream-300 select-none">
-                inviteku.com/
-              </span>
-              <input
-                id="custom-key"
-                type="text"
-                value={customKey}
-                onChange={e => setCustomKey(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+              <span className="bg-cream-100 px-3 py-3 text-slate-soft text-sm flex items-center border-r border-cream-300 select-none">inviteku.com/</span>
+              <input id="custom-key" type="text" value={customKey}
+                onChange={e => setCustomKey(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
                 placeholder="nama-pasangan"
-                className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none"
-                required
-              />
+                className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none" required />
             </div>
             <p className="text-[11px] text-slate-soft">Hanya huruf kecil, angka, strip (-), dan underscore (_).</p>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Upload Bukti Transfer</p>
-            <div
-              onClick={() => inputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                preview ? 'border-blush-300 bg-blush-50/50' : 'border-cream-300 bg-cream-50 hover:border-blush-400 hover:bg-blush-50'
-              }`}
-            >
-              {preview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={preview} alt="Preview bukti transfer" className="max-h-48 rounded-lg object-contain shadow-sm" />
-              ) : (
-                <>
-                  <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-blush-300 mb-1">
-                    <ImageIcon size={24} />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-ink">Klik untuk pilih gambar</p>
-                    <p className="text-xs text-slate-soft mt-1">Format: JPG, PNG (Max 5MB)</p>
-                  </div>
-                </>
-              )}
-            </div>
-            <input ref={inputRef} type="file" accept="image/*" className="hidden"
-              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            {file && <p className="text-xs text-mint-600 flex items-center gap-1.5 font-medium"><CheckCircle2 size={14} />{file.name}</p>}
+          {/* Data Pemesan */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Data Pemesan</p>
+            <input type="text" placeholder="Nama lengkap" value={buyerName} onChange={e => setBuyerName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
+            <input type="email" placeholder="Alamat email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
+            <input type="tel" placeholder="Nomor WhatsApp (contoh: 08123456789)" value={buyerPhone} onChange={e => setBuyerPhone(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
           </div>
-          
-          {err && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-              <p>{err}</p>
+
+          {/* Kode Voucher */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Kode Voucher (opsional)</p>
+            {voucherResult ? (
+              <div className="flex items-center justify-between bg-mint-50 border border-mint-200 rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-sm font-bold text-mint-700 font-mono">{voucherCode}</p>
+                  <p className="text-xs text-mint-600 mt-0.5">Hemat {formatRupiah(voucherResult.discount_amount)}</p>
+                </div>
+                <button type="button" onClick={handleRemoveVoucher}
+                  className="text-mint-500 hover:text-red-400 transition-colors p-1">
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Masukkan kode voucher"
+                  value={voucherInput}
+                  onChange={e => { setVoucherInput(e.target.value.toUpperCase()); setVoucherErr(null); }}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleApplyVoucher(); } }}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-cream-300 bg-cream-50 text-sm font-mono font-bold tracking-widest focus:outline-none focus:border-lavender-300 focus:ring-2 focus:ring-lavender-100"
+                />
+                <motion.button type="button"
+                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={handleApplyVoucher}
+                  disabled={voucherLoading || !voucherInput.trim()}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 shadow-sm"
+                  style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
+                  {voucherLoading ? <Loader2 size={15} className="animate-spin" /> : "Pakai"}
+                </motion.button>
+              </div>
+            )}
+            {voucherErr && (
+              <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{voucherErr}</p>
+            )}
+          </div>
+
+          {/* Total */}
+          {voucherResult && (
+            <div className="bg-gradient-to-r from-mint-50 to-lavender-50 border border-mint-100 rounded-xl p-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-ink">Total Bayar</span>
+              <span className="text-lg font-extrabold text-mint-700">{formatRupiah(finalPrice)}</span>
             </div>
           )}
-          
-          <div className="flex gap-3 justify-end pt-2">
+
+          {err && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" /><p>{err}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-end pt-1">
             <button type="button" onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-              disabled={!file || !customKey.trim() || uploading}
+              disabled={loading}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
               style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-              {uploading ? <><Loader2 size={16} className="animate-spin" />Mengirim…</> : <><Send size={16} />Kirim Request</>}
+              {loading ? <><Loader2 size={16} className="animate-spin" />Memproses…</> : <><CreditCard size={16} />Bayar Sekarang</>}
             </motion.button>
           </div>
         </form>
@@ -492,6 +521,7 @@ function CheckoutModal({
     </div>
   );
 }
+
 
 // ── Undangan Card ──────────────────────────────────────────────────────────
 
@@ -508,6 +538,8 @@ function UndanganCard({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const handlePreview = async () => {
     if (previewLoading) return;
@@ -531,13 +563,29 @@ function UndanganCard({
   }, [token, undangan.id]);
 
   const status = payStatus?.status ?? (undangan.is_published ? "approved" : "draft");
-  const isDraft = status === "draft";
+  // isDraft = true juga untuk status failed/rejected agar user bisa Request Publish ulang
+  const isDraft = !undangan.is_published && (status === "draft" || status === "failed" || status === "rejected");
+
   const templateData = templates.find(t => t.template === undangan.template);
 
   const handleCheckoutSuccess = () => {
     setCheckoutOpen(false);
     setCheckoutDone(true);
     setPayStatus(prev => prev ? { ...prev, status: "pending" } : { id: 0, id_undangan: undangan.id, status: "pending" });
+  };
+
+  const handleCancelOrder = async () => {
+    setCancelling(true);
+    try {
+      await cancelOrderApi(token, undangan.id);
+      setPayStatus(null);
+      setCheckoutDone(false);
+      setCancelConfirmOpen(false);
+    } catch (e: unknown) {
+      alert((e as { message?: string })?.message ?? "Gagal membatalkan order.");
+    } finally {
+      setCancelling(false);
+    }
   };
 
   return (
@@ -646,17 +694,28 @@ function UndanganCard({
           {(checkoutDone || status === "pending") && (
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-sm font-medium text-peach-500 bg-peach-50 px-4 py-2 rounded-xl border border-peach-100">
-                <Clock size={16} className="animate-pulse" /> Menunggu Verifikasi
+                <Clock size={16} className="animate-pulse" /> Menunggu Pembayaran
               </div>
-              <a
-                href={`https://wa.me/6285179624972?text=${encodeURIComponent(`Halo, saya ingin konfirmasi pembayaran publish undangan.\nNama: ${undangan.nama ?? '-'}\nTemplate: ${undangan.template ?? '-'}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
-                style={{ background: "linear-gradient(135deg, #25d366 0%, #128c7e 100%)" }}
+              {/* Lanjutkan bayar jika payment_url masih ada */}
+              {payStatus?.payment_url && (
+                <a
+                  href={payStatus.payment_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}
+                >
+                  <CreditCard size={15} /> Lanjutkan Bayar
+                </a>
+              )}
+              {/* Batalkan agar bisa order ulang */}
+              <button
+                onClick={() => setCancelConfirmOpen(true)}
+                disabled={cancelling}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
-                <MessageCircle size={15} /> Konfirmasi WA
-              </a>
+                <X size={15} /> Batalkan
+              </button>
             </div>
           )}
         </div>
@@ -687,7 +746,53 @@ function UndanganCard({
             onSuccess={handleCheckoutSuccess}
           />
         )}
+        {cancelConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-float w-full max-w-sm p-6 space-y-5"
+            >
+              {/* Icon */}
+              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-red-50 mx-auto">
+                <AlertTriangle size={28} className="text-red-500" />
+              </div>
+
+              {/* Text */}
+              <div className="text-center space-y-1.5">
+                <h3 className="font-bold text-ink text-lg">Batalkan Order?</h3>
+                <p className="text-sm text-slate-soft">
+                  Order pembayaran ini akan dibatalkan. Anda bisa melakukan Request Publish ulang setelah ini.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCancelConfirmOpen(false)}
+                  disabled={cancelling}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-cream-300 text-slate-soft hover:bg-cream-100 transition-colors disabled:opacity-50"
+                >
+                  Tidak, Kembali
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 shadow-sm"
+                >
+                  {cancelling
+                    ? <><Loader2 size={15} className="animate-spin" /> Membatalkan…</>
+                    : <><X size={15} /> Ya, Batalkan</>
+                  }
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
+
     </>
   );
 }

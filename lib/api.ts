@@ -441,11 +441,21 @@ export async function updateUndanganApi(
 
 // ── Request Publish (multipart) ────────────────────────────────────────────
 
-export async function requestPublishApi(token: string, formData: FormData) {
-  return apiFetch<ApiResponse>("/request-publish", {
+export async function requestPublishApi(
+  token: string,
+  payload: {
+    id_undangan: number;
+    key: string;
+    buyer_name: string;
+    buyer_email: string;
+    buyer_phone: string;
+    voucher_code?: string;
+  },
+) {
+  return apiFetch<{ data: { payment_url: string; order_id: number } }>("/request-publish", {
     method: "POST",
-    headers: authMultipartHeaders(token),
-    body: formData,
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -466,6 +476,13 @@ export async function getPaymentStatusApi(
 ) {
   return apiFetch<{ data: PaymentStatus }>(`/payment-status/${idUndangan}`, {
     method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export async function cancelOrderApi(token: string, idUndangan: number | string) {
+  return apiFetch<ApiResponse>(`/cancel-order/${idUndangan}`, {
+    method: "DELETE",
     headers: authHeaders(token),
   });
 }
@@ -542,6 +559,76 @@ export async function adminUpdateUndanganApi(
     method: "PUT",
     headers: adminHeaders(adminToken),
     body: JSON.stringify(payload),
+  });
+}
+
+// ── Voucher (Admin) ────────────────────────────────────────────────────────
+
+export interface Voucher {
+  id: number;
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_price: number;
+  max_discount: number;
+  quota: number;
+  used_count: number;
+  specific_user: string;
+  is_active: boolean;
+  expired_at: number;
+  created_at: number;
+}
+
+export interface CreateVoucherPayload {
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_price: number;
+  max_discount: number;
+  quota: number;
+  specific_user: string;
+  is_active: boolean;
+  expired_at: number;
+}
+
+export async function adminGetVouchersApi(adminToken: string) {
+  return apiFetch<{ data: Voucher[] }>("/admin/vouchers", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminCreateVoucherApi(adminToken: string, payload: CreateVoucherPayload) {
+  return apiFetch<{ data: Voucher }>("/admin/vouchers", {
+    method: "POST",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteVoucherApi(adminToken: string, id: number) {
+  return apiFetch<ApiResponse>(`/admin/vouchers/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+// ── Voucher (User) ─────────────────────────────────────────────────────────
+
+export interface VoucherValidateResult {
+  code: string;
+  type: string;
+  value: number;
+  original_price: number;
+  discount_amount: number;
+  final_price: number;
+}
+
+export async function validateVoucherApi(token: string, code: string, originalPrice: number) {
+  return apiFetch<{ data: VoucherValidateResult }>("/validate-voucher", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ code, original_price: originalPrice }),
   });
 }
 
@@ -726,12 +813,14 @@ export interface TemplatePrice {
   backsound_filename?: string;
 }
 
-export type PaymentStatusValue = "draft" | "pending" | "approved" | "rejected";
+export type PaymentStatusValue = "draft" | "pending" | "paid" | "approved" | "rejected" | "failed";
 
 export interface PaymentStatus {
   id: number;
   id_undangan: number;
   status: PaymentStatusValue;
+  payment_url?: string;
+  ipaymu_session_id?: string;
   bukti_transfer?: string;
   note?: string;
   created_at?: string;
