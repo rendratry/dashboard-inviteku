@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Mail, User, Users, PenSquare, MessageCircle,
-  ChevronLeft, LogOut, Library, CreditCard, HelpCircle
+  ChevronLeft, LogOut, Library, CreditCard, HelpCircle, Receipt
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n/dictionaries";
@@ -28,6 +28,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     { href: "/dashboard", exact: true, label: t.nav.dashboard, icon: <LayoutDashboard size={18} /> },
     { href: "/dashboard/undangan", label: t.nav.createInvitation, icon: <Mail size={18} /> },
     { href: "/dashboard/harga", label: t.nav.pricing, icon: <CreditCard size={18} /> },
+    { href: "/dashboard/riwayat-pembayaran", label: "Riwayat Bayar", icon: <Receipt size={18} /> },
     { href: "/dashboard/tamu", label: t.nav.guests, icon: <Users size={18} /> },
     { href: "/dashboard/assets", label: t.nav.invitationAssets, icon: <PenSquare size={18} /> },
     { href: "/dashboard/library", label: t.nav.assetsLibrary, icon: <Library size={18} /> },

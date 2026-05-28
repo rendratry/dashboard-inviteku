@@ -487,6 +487,30 @@ export async function cancelOrderApi(token: string, idUndangan: number | string)
   });
 }
 
+export interface UserPaymentOrder {
+  id: number;
+  id_undangan: number;
+  id_user: string;
+  amount: number;
+  status: PaymentStatusValue;
+  bukti_transfer?: string;
+  note?: string;
+  requested_key?: string;
+  payment_url?: string;
+  payment_method?: string;
+  voucher_id?: number;
+  discount_amount?: number;
+  created_at?: number;
+  verified_at?: number;
+}
+
+export async function getMyPaymentsApi(token: string) {
+  return apiFetch<{ data: UserPaymentOrder[] }>("/my-payments", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 // ── Admin ──────────────────────────────────────────────────────────────────
 
 function adminHeaders(adminToken: string): HeadersInit {
