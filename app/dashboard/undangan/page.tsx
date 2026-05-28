@@ -562,9 +562,15 @@ function UndanganCard({
       .catch(() => setPayStatus(null));
   }, [token, undangan.id]);
 
-  const status = payStatus?.status ?? (undangan.is_published ? "approved" : "draft");
+  // Jika undangan sudah dipublish → selalu "approved" terlepas dari payment_status
+  // "paid" dari iPaymu callback di-map ke "approved" agar badge tampil benar
+  const rawStatus = payStatus?.status ?? "draft";
+  const status = undangan.is_published
+    ? "approved"
+    : rawStatus === "paid" ? "approved" : rawStatus;
   // isDraft = true juga untuk status failed/rejected agar user bisa Request Publish ulang
   const isDraft = !undangan.is_published && (status === "draft" || status === "failed" || status === "rejected");
+
 
   const templateData = templates.find(t => t.template === undangan.template);
 
