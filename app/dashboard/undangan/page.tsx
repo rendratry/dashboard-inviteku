@@ -738,6 +738,7 @@ function UndanganCard({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [changingMethod, setChangingMethod] = useState(false);
 
   const handlePreview = async () => {
     if (previewLoading) return;
@@ -789,6 +790,21 @@ function UndanganCard({
       alert((e as { message?: string })?.message ?? "Gagal membatalkan order.");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  // Cancel order lama lalu langsung buka checkout untuk ganti metode
+  const handleChangeMethod = async () => {
+    setChangingMethod(true);
+    try {
+      await cancelOrderApi(token, undangan.id);
+      setPayStatus(null);
+      setCheckoutDone(false);
+      setCheckoutOpen(true);
+    } catch (e: unknown) {
+      alert((e as { message?: string })?.message ?? "Gagal mengganti metode bayar.");
+    } finally {
+      setChangingMethod(false);
     }
   };
 
@@ -900,7 +916,7 @@ function UndanganCard({
               <div className="flex items-center gap-2 text-sm font-medium text-peach-500 bg-peach-50 px-4 py-2 rounded-xl border border-peach-100">
                 <Clock size={16} className="animate-pulse" /> Menunggu Pembayaran
               </div>
-              {/* Lanjutkan bayar jika payment_url masih ada */}
+              {/* Lanjutkan bayar jika payment_url masih ada (gateway) */}
               {payStatus?.payment_url && (
                 <a
                   href={payStatus.payment_url}
@@ -912,10 +928,21 @@ function UndanganCard({
                   <CreditCard size={15} /> Lanjutkan Bayar
                 </a>
               )}
+              {/* Ganti Metode Bayar */}
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={handleChangeMethod}
+                disabled={changingMethod || cancelling}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border border-lavender-200 text-lavender-600 hover:bg-lavender-50 transition-colors disabled:opacity-50"
+              >
+                {changingMethod
+                  ? <><Loader2 size={14} className="animate-spin" /> Memproses…</>
+                  : <><CreditCard size={14} /> Ganti Metode Bayar</>}
+              </motion.button>
               {/* Batalkan agar bisa order ulang */}
               <button
                 onClick={() => setCancelConfirmOpen(true)}
-                disabled={cancelling}
+                disabled={cancelling || changingMethod}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <X size={15} /> Batalkan
