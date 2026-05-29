@@ -144,7 +144,9 @@ export default function RiwayatPembayaranPage() {
     try {
       const res = await getMyPaymentsApi(token);
       const data = Array.isArray(res.data) ? res.data : [];
-      setOrders(data);
+      // Sembunyikan transaksi yang gagal atau ditolak agar tidak mengotori riwayat
+      const validOrders = data.filter((o: UserPaymentOrder) => o.status !== "failed" && o.status !== "rejected");
+      setOrders(validOrders);
 
       // Fetch nama undangan untuk setiap order (best-effort)
       const undanganRes = await getUndanganApi(token).catch(() => ({ data: [] as Undangan[] }));
@@ -167,7 +169,6 @@ export default function RiwayatPembayaranPage() {
     { key: "all",     label: "Semua",    count: orders.length },
     { key: "paid",    label: "Berhasil", count: paidOrders.length },
     { key: "pending", label: "Pending",  count: orders.filter(o => o.status === "pending").length },
-    { key: "failed",  label: "Gagal",    count: orders.filter(o => o.status === "failed" || o.status === "rejected").length },
   ];
 
   const filtered = filter === "all" ? orders :
@@ -216,7 +217,7 @@ export default function RiwayatPembayaranPage() {
             {
               label: "Total Hemat (Voucher)",
               value: totalSaved > 0 ? formatRupiah(totalSaved) : "Rp 0",
-              sub: totalSaved > 0 ? "kamu hemat dari voucher 🎉" : "belum pakai voucher",
+              sub: totalSaved > 0 ? "kamu hemat dari voucher" : "belum pakai voucher",
               icon: <TrendingDown size={20} />,
               gradient: "linear-gradient(135deg, #ffc2cf 0%, #ffb06a 100%)",
             },

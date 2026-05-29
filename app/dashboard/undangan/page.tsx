@@ -657,7 +657,7 @@ function CheckoutModal({
 
             <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-3">
               <p className="text-xs text-lavender-700">
-                💡 <strong>Setelah transfer</strong>, klik tombol di bawah untuk mengupload bukti transfer.
+                <strong>Setelah transfer</strong>, klik tombol di bawah untuk mengupload bukti transfer.
                 Admin akan memverifikasi dan mempublish undanganmu dalam 1×24 jam kerja.
               </p>
             </div>
@@ -973,7 +973,7 @@ function UndanganCard({
         {checkoutOpen && (
           <CheckoutModal
             undangan={undangan} templates={templates} token={token}
-            onClose={() => setCheckoutOpen(false)}
+            onClose={() => { setCheckoutOpen(false); window.location.reload(); }}
             onSuccess={handleCheckoutSuccess}
           />
         )}

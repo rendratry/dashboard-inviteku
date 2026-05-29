@@ -231,7 +231,7 @@ const undanganEN = {
 const pricingID = {
   title: "Harga Template",
   subtitle: "Pilih paket undangan digital yang sesuai untuk Anda",
-  bannerTitle: "Coba Semua Template Gratis — Bayar Hanya Kalau Sudah Jatuh Cinta! 🎉",
+  bannerTitle: "Coba Semua Template Gratis — Bayar Hanya Kalau Sudah Jatuh Cinta!",
   bannerSub: "Eksplorasi, isi data, dan lihat preview undangan Anda sepuasnya tanpa biaya sepeser pun. Ketika sudah menemukan yang sempurna, baru lanjut ke pembayaran.",
   noPricing: "Belum ada paket harga",
   noPricingSub: "Silakan periksa kembali nanti.",
@@ -242,7 +242,7 @@ const pricingID = {
 const pricingEN = {
   title: "Template Pricing",
   subtitle: "Choose the digital invitation package that suits you",
-  bannerTitle: "Try All Templates for Free — Pay Only When You Fall in Love! 🎉",
+  bannerTitle: "Try All Templates for Free — Pay Only When You Fall in Love!",
   bannerSub: "Explore, fill in your details, and preview your invitation to your heart's content — completely free. When you've found the perfect one, then proceed to payment.",
   noPricing: "No pricing packages available",
   noPricingSub: "Please check back later.",
