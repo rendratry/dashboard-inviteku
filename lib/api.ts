@@ -450,9 +450,10 @@ export async function requestPublishApi(
     buyer_email: string;
     buyer_phone: string;
     voucher_code?: string;
+    payment_type?: "gateway" | "manual";
   },
 ) {
-  return apiFetch<{ data: { payment_url: string; order_id: number } }>("/request-publish", {
+  return apiFetch<{ data: { payment_url: string; order_id: number; payment_type: string } }>("/request-publish", {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify(payload),
@@ -511,6 +512,44 @@ export async function getMyPaymentsApi(token: string) {
   });
 }
 
+// ── Bank Accounts (Transfer Manual) ────────────────────────────────────────
+
+export interface BankAccount {
+  id: number;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  is_active: boolean;
+  created_at?: number;
+  updated_at?: number;
+}
+
+export async function getBankAccountsApi() {
+  return apiFetch<{ data: BankAccount[] }>("/bank-accounts", {
+    method: "GET",
+    headers: { "x-api-key": API_KEY },
+  });
+}
+
+export async function uploadBuktiTransferApi(
+  token: string,
+  orderId: number,
+  file: File,
+) {
+  const formData = new FormData();
+  formData.append("order_id", String(orderId));
+  formData.append("file", file);
+  return apiFetch<{ data: { message: string; bukti_url: string } }>("/upload-bukti-transfer", {
+    method: "POST",
+    headers: {
+      "x-api-key": API_KEY,
+      Authorization: token,
+      // NOTE: jangan set Content-Type — biarkan browser set boundary untuk multipart
+    },
+    body: formData,
+  });
+}
+
 // ── Admin ──────────────────────────────────────────────────────────────────
 
 function adminHeaders(adminToken: string): HeadersInit {
@@ -553,6 +592,43 @@ export async function adminGetRejectedPaymentsApi(adminToken: string) {
 export async function adminGetAllPaymentsApi(adminToken: string) {
   return apiFetch<{ data: AdminPayment[] }>("/admin/all-payments", {
     method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminGetBankAccountsApi(adminToken: string) {
+  return apiFetch<{ data: BankAccount[] }>("/admin/bank-accounts", {
+    method: "GET",
+    headers: adminHeaders(adminToken),
+  });
+}
+
+export async function adminCreateBankAccountApi(
+  adminToken: string,
+  payload: Omit<BankAccount, "id" | "created_at" | "updated_at">,
+) {
+  return apiFetch<ApiResponse>("/admin/bank-accounts", {
+    method: "POST",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminUpdateBankAccountApi(
+  adminToken: string,
+  id: number,
+  payload: Omit<BankAccount, "id" | "created_at" | "updated_at">,
+) {
+  return apiFetch<ApiResponse>(`/admin/bank-accounts/${id}`, {
+    method: "PUT",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteBankAccountApi(adminToken: string, id: number) {
+  return apiFetch<ApiResponse>(`/admin/bank-accounts/${id}`, {
+    method: "DELETE",
     headers: adminHeaders(adminToken),
   });
 }

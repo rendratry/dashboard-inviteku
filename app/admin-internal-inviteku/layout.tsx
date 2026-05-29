@@ -10,7 +10,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
-  ShieldCheck, CreditCard, ChevronLeft, LogOut, LayoutDashboard, Mail, Sparkles, User, Tag
+  ShieldCheck, CreditCard, ChevronLeft, LogOut, LayoutDashboard, Mail, Sparkles, User, Tag, Building2
 } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
 
@@ -62,6 +62,7 @@ const adminNavItems = [
   { href: "/admin-internal-inviteku/dashboard/templates", label: "Template", icon: <Sparkles size={18} /> },
   { href: "/admin-internal-inviteku/dashboard/payments", label: "Pembayaran", icon: <CreditCard size={18} /> },
   { href: "/admin-internal-inviteku/dashboard/vouchers", label: "Voucher", icon: <Tag size={18} /> },
+  { href: "/admin-internal-inviteku/dashboard/bank-accounts", label: "Rekening Bank", icon: <Building2 size={18} /> },
   { href: "/admin-internal-inviteku/dashboard/users", label: "Users", icon: <User size={18} /> },
 ];
 

@@ -7,13 +7,15 @@ import {
   Mail, Plus, CheckCircle2, AlertTriangle, Loader2, Link2,
   CalendarClock, Eye, Edit2, CreditCard, X,
   Clock, Ban, Sparkles, LayoutGrid, Check, HelpCircle, MessageCircle,
+  Building2, Zap, Upload, Copy,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import {
   createUndanganApi, getUndanganApi, getPaymentStatusApi, cancelOrderApi,
   updateUndanganApi, requestPublishApi, getTemplatePricesApi,
   generatePreviewTokenApi, validateVoucherApi,
-  type Undangan, type PaymentStatus, type TemplatePrice, type VoucherValidateResult,
+  getBankAccountsApi, uploadBuktiTransferApi,
+  type Undangan, type PaymentStatus, type TemplatePrice, type VoucherValidateResult, type BankAccount,
 } from "@/lib/api";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -318,6 +320,10 @@ function CheckoutModal({
   undangan: Undangan; templates: TemplatePrice[]; token: string;
   onClose: () => void; onSuccess: () => void;
 }) {
+  // Step: 'form' | 'method' | 'manual-info' | 'upload'
+  const [step, setStep] = useState<'form' | 'method' | 'manual-info' | 'upload'>('form');
+  const [paymentMethod, setPaymentMethod] = useState<'gateway' | 'manual'>('gateway');
+
   const [customKey, setCustomKey] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
@@ -330,13 +336,21 @@ function CheckoutModal({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Manual transfer state
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [buktiFile, setBuktiFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const [uploadDone, setUploadDone] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
   const templatePrice = templates.find(t => t.template === undangan.template);
   const originalPrice: number = templatePrice
     ? (templatePrice.is_disc && templatePrice.price_disc && templatePrice.price_disc > 0
       ? templatePrice.price_disc
       : (templatePrice.price ?? templatePrice.effective_price))
     : 0;
-
   const finalPrice = voucherResult ? voucherResult.final_price : originalPrice;
 
   const handleApplyVoucher = async () => {
@@ -352,18 +366,21 @@ function CheckoutModal({
   };
 
   const handleRemoveVoucher = () => {
-    setVoucherResult(null);
-    setVoucherCode("");
-    setVoucherInput("");
-    setVoucherErr(null);
+    setVoucherResult(null); setVoucherCode(""); setVoucherInput(""); setVoucherErr(null);
   };
 
-  const submit = async (e: React.FormEvent) => {
+  // Step 1 → Step 2: validasi form lalu pilih metode
+  const handleFormNext = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customKey.trim() || !buyerName.trim() || !buyerEmail.trim() || !buyerPhone.trim()) {
-      setErr("Semua field wajib diisi.");
-      return;
+      setErr("Semua field wajib diisi."); return;
     }
+    setErr(null);
+    setStep('method');
+  };
+
+  // Submit gateway
+  const submitGateway = async () => {
     setLoading(true); setErr(null);
     try {
       const result = await requestPublishApi(token, {
@@ -373,6 +390,7 @@ function CheckoutModal({
         buyer_email: buyerEmail.trim(),
         buyer_phone: buyerPhone.trim(),
         voucher_code: voucherCode,
+        payment_type: 'gateway',
       });
       if (result.data?.payment_url) {
         window.location.href = result.data.payment_url;
@@ -384,12 +402,62 @@ function CheckoutModal({
     } finally { setLoading(false); }
   };
 
+  // Submit manual: buat order, ambil rekening bank, pindah ke step manual-info
+  const submitManual = async () => {
+    setLoading(true); setErr(null);
+    try {
+      const [result, bankRes] = await Promise.all([
+        requestPublishApi(token, {
+          id_undangan: undangan.id,
+          key: customKey.trim(),
+          buyer_name: buyerName.trim(),
+          buyer_email: buyerEmail.trim(),
+          buyer_phone: buyerPhone.trim(),
+          voucher_code: voucherCode,
+          payment_type: 'manual',
+        }),
+        getBankAccountsApi(),
+      ]);
+      setOrderId(result.data.order_id);
+      setBankAccounts(Array.isArray(bankRes.data) ? bankRes.data : []);
+      setStep('manual-info');
+    } catch (e: unknown) {
+      setErr((e as { message?: string })?.message ?? "Gagal membuat order.");
+    } finally { setLoading(false); }
+  };
+
+  // Upload bukti transfer
+  const handleUpload = async () => {
+    if (!buktiFile || !orderId) return;
+    setUploadLoading(true); setUploadErr(null);
+    try {
+      await uploadBuktiTransferApi(token, orderId, buktiFile);
+      setUploadDone(true);
+      setStep('upload');
+    } catch (e: unknown) {
+      setUploadErr((e as { message?: string })?.message ?? "Gagal upload bukti.");
+    } finally { setUploadLoading(false); }
+  };
+
+  const copyText = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        className="bg-white rounded-2xl shadow-float w-full max-w-md p-6 space-y-5 max-h-[92vh] overflow-y-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-cream-200 pb-4">
-          <h2 className="font-bold text-ink flex items-center gap-2 text-lg"><CreditCard size={18} className="text-blush-400" />Bayar & Publish</h2>
+          <h2 className="font-bold text-ink flex items-center gap-2 text-lg">
+            <CreditCard size={18} className="text-blush-400" />
+            {step === 'form' ? 'Bayar & Publish' :
+             step === 'method' ? 'Pilih Metode Bayar' :
+             step === 'manual-info' ? 'Info Transfer' : 'Konfirmasi Upload'}
+          </h2>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-cream-100 text-slate-soft hover:text-red-400 transition-colors"><X size={18} /></button>
         </div>
 
@@ -411,9 +479,7 @@ function CheckoutModal({
                 <>
                   <p className="text-lg font-extrabold text-mint-600">{formatRupiah(voucherResult.final_price)}</p>
                   <p className="text-xs line-through text-slate-soft">{formatRupiah(originalPrice)}</p>
-                  <span className="text-xs bg-mint-100 text-mint-600 px-1.5 py-0.5 rounded-full font-semibold">
-                    -{formatRupiah(voucherResult.discount_amount)}
-                  </span>
+                  <span className="text-xs bg-mint-100 text-mint-600 px-1.5 py-0.5 rounded-full font-semibold">-{formatRupiah(voucherResult.discount_amount)}</span>
                 </>
               ) : (
                 <p className="text-lg font-extrabold text-blush-500">{formatRupiah(originalPrice)}</p>
@@ -422,101 +488,233 @@ function CheckoutModal({
           </div>
         </div>
 
-        {/* iPaymu Info */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3">
-          <HelpCircle size={16} className="text-blue-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-blue-700">Pembayaran dilakukan secara otomatis melalui iPaymu. Undangan akan dipublish otomatis setelah pembayaran berhasil.</p>
-        </div>
-
-        <form onSubmit={submit} className="space-y-4">
-          {/* Key Undangan */}
-          <div className="space-y-1.5">
-            <label htmlFor="custom-key" className="block text-xs font-semibold text-slate-soft uppercase tracking-wider">Key Undangan (URL)</label>
-            <div className="flex bg-cream-50 rounded-xl border border-cream-300 overflow-hidden focus-within:border-blush-300 focus-within:ring-2 focus-within:ring-blush-100 transition-all">
-              <span className="bg-cream-100 px-3 py-3 text-slate-soft text-sm flex items-center border-r border-cream-300 select-none">inviteku.com/</span>
-              <input id="custom-key" type="text" value={customKey}
-                onChange={e => setCustomKey(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
-                placeholder="nama-pasangan"
-                className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none" required />
+        {/* ── Step: Form ──────────────────────────────────────────────────── */}
+        {step === 'form' && (
+          <form onSubmit={handleFormNext} className="space-y-4">
+            {/* Key */}
+            <div className="space-y-1.5">
+              <label htmlFor="custom-key" className="block text-xs font-semibold text-slate-soft uppercase tracking-wider">Key Undangan (URL)</label>
+              <div className="flex bg-cream-50 rounded-xl border border-cream-300 overflow-hidden focus-within:border-blush-300 focus-within:ring-2 focus-within:ring-blush-100 transition-all">
+                <span className="bg-cream-100 px-3 py-3 text-slate-soft text-sm flex items-center border-r border-cream-300 select-none">inviteku.com/</span>
+                <input id="custom-key" type="text" value={customKey}
+                  onChange={e => setCustomKey(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                  placeholder="nama-pasangan"
+                  className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none" required />
+              </div>
+              <p className="text-[11px] text-slate-soft">Hanya huruf kecil, angka, strip (-), dan underscore (_).</p>
             </div>
-            <p className="text-[11px] text-slate-soft">Hanya huruf kecil, angka, strip (-), dan underscore (_).</p>
-          </div>
 
-          {/* Data Pemesan */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Data Pemesan</p>
-            <input type="text" placeholder="Nama lengkap" value={buyerName} onChange={e => setBuyerName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
-            <input type="email" placeholder="Alamat email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
-            <input type="tel" placeholder="Nomor WhatsApp (contoh: 08123456789)" value={buyerPhone} onChange={e => setBuyerPhone(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
-          </div>
+            {/* Data Pemesan */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Data Pemesan</p>
+              <input type="text" placeholder="Nama lengkap" value={buyerName} onChange={e => setBuyerName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
+              <input type="email" placeholder="Alamat email" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
+              <input type="tel" placeholder="Nomor WhatsApp (contoh: 08123456789)" value={buyerPhone} onChange={e => setBuyerPhone(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-cream-50 text-sm focus:outline-none focus:border-blush-300 focus:ring-2 focus:ring-blush-100" required />
+            </div>
 
-          {/* Kode Voucher */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Kode Voucher (opsional)</p>
-            {voucherResult ? (
-              <div className="flex items-center justify-between bg-mint-50 border border-mint-200 rounded-xl px-4 py-3">
-                <div>
-                  <p className="text-sm font-bold text-mint-700 font-mono">{voucherCode}</p>
-                  <p className="text-xs text-mint-600 mt-0.5">Hemat {formatRupiah(voucherResult.discount_amount)}</p>
+            {/* Voucher */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Kode Voucher (opsional)</p>
+              {voucherResult ? (
+                <div className="flex items-center justify-between bg-mint-50 border border-mint-200 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-mint-700 font-mono">{voucherCode}</p>
+                    <p className="text-xs text-mint-600 mt-0.5">Hemat {formatRupiah(voucherResult.discount_amount)}</p>
+                  </div>
+                  <button type="button" onClick={handleRemoveVoucher} className="text-mint-500 hover:text-red-400 transition-colors p-1"><X size={16} /></button>
                 </div>
-                <button type="button" onClick={handleRemoveVoucher}
-                  className="text-mint-500 hover:text-red-400 transition-colors p-1">
-                  <X size={16} />
-                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Masukkan kode voucher" value={voucherInput}
+                    onChange={e => { setVoucherInput(e.target.value.toUpperCase()); setVoucherErr(null); }}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleApplyVoucher(); } }}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-cream-300 bg-cream-50 text-sm font-mono font-bold tracking-widest focus:outline-none focus:border-lavender-300 focus:ring-2 focus:ring-lavender-100" />
+                  <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={handleApplyVoucher} disabled={voucherLoading || !voucherInput.trim()}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
+                    {voucherLoading ? <Loader2 size={15} className="animate-spin" /> : "Pakai"}
+                  </motion.button>
+                </div>
+              )}
+              {voucherErr && <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{voucherErr}</p>}
+            </div>
+
+            {voucherResult && (
+              <div className="bg-gradient-to-r from-mint-50 to-lavender-50 border border-mint-100 rounded-xl p-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-ink">Total Bayar</span>
+                <span className="text-lg font-extrabold text-mint-700">{formatRupiah(finalPrice)}</span>
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Masukkan kode voucher"
-                  value={voucherInput}
-                  onChange={e => { setVoucherInput(e.target.value.toUpperCase()); setVoucherErr(null); }}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleApplyVoucher(); } }}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-cream-300 bg-cream-50 text-sm font-mono font-bold tracking-widest focus:outline-none focus:border-lavender-300 focus:ring-2 focus:ring-lavender-100"
-                />
-                <motion.button type="button"
-                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  onClick={handleApplyVoucher}
-                  disabled={voucherLoading || !voucherInput.trim()}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 shadow-sm"
+            )}
+
+            {err && <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm"><AlertTriangle size={16} className="shrink-0 mt-0.5" /><p>{err}</p></div>}
+
+            <div className="flex gap-3 justify-end pt-1">
+              <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md"
+                style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+                Lanjut → Pilih Metode Bayar
+              </motion.button>
+            </div>
+          </form>
+        )}
+
+        {/* ── Step: Method ────────────────────────────────────────────────── */}
+        {step === 'method' && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-soft text-center">Pilih cara pembayaran yang kamu inginkan:</p>
+
+            <div className="grid grid-cols-1 gap-3">
+              {/* iPaymu Gateway */}
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={() => { setPaymentMethod('gateway'); submitGateway(); }}
+                disabled={loading}
+                className={`relative flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'gateway' ? 'border-blush-300 bg-blush-50' : 'border-cream-200 bg-cream-50 hover:border-blush-200'}`}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+                  style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
+                  <Zap size={22} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-ink">Payment Gateway</p>
+                  <p className="text-xs text-slate-soft mt-0.5">QRIS, Virtual Account, Kartu Kredit via iPaymu</p>
+                  <span className="inline-flex items-center gap-1 mt-2 text-xs bg-mint-100 text-mint-600 px-2 py-0.5 rounded-full font-semibold">
+                    <CheckCircle2 size={10} />Verifikasi Otomatis
+                  </span>
+                </div>
+                {loading && paymentMethod === 'gateway' && <Loader2 size={16} className="animate-spin text-blush-400 absolute right-4 top-4" />}
+              </motion.button>
+
+              {/* Transfer Manual */}
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={() => { setPaymentMethod('manual'); submitManual(); }}
+                disabled={loading}
+                className={`relative flex items-start gap-4 p-5 rounded-2xl border-2 text-left transition-all ${paymentMethod === 'manual' ? 'border-lavender-300 bg-lavender-50' : 'border-cream-200 bg-cream-50 hover:border-lavender-200'}`}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
                   style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
-                  {voucherLoading ? <Loader2 size={15} className="animate-spin" /> : "Pakai"}
-                </motion.button>
-              </div>
-            )}
-            {voucherErr && (
-              <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{voucherErr}</p>
-            )}
+                  <Building2 size={22} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-ink">Transfer Manual</p>
+                  <p className="text-xs text-slate-soft mt-0.5">Transfer ke rekening bank lalu upload bukti</p>
+                  <span className="inline-flex items-center gap-1 mt-2 text-xs bg-peach-100 text-peach-600 px-2 py-0.5 rounded-full font-semibold">
+                    <Clock size={10} />Verifikasi oleh Admin
+                  </span>
+                </div>
+                {loading && paymentMethod === 'manual' && <Loader2 size={16} className="animate-spin text-lavender-400 absolute right-4 top-4" />}
+              </motion.button>
+            </div>
+
+            {err && <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm"><AlertTriangle size={16} className="shrink-0" /><p>{err}</p></div>}
+
+            <button onClick={() => setStep('form')} className="text-sm text-slate-soft hover:text-ink transition-colors flex items-center gap-1">
+              ← Kembali ke form
+            </button>
           </div>
+        )}
 
-          {/* Total */}
-          {voucherResult && (
-            <div className="bg-gradient-to-r from-mint-50 to-lavender-50 border border-mint-100 rounded-xl p-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-ink">Total Bayar</span>
-              <span className="text-lg font-extrabold text-mint-700">{formatRupiah(finalPrice)}</span>
+        {/* ── Step: Manual Info ──────────────────────────────────────────── */}
+        {step === 'manual-info' && (
+          <div className="space-y-4">
+            <div className="bg-peach-50 border border-peach-200 rounded-xl p-4">
+              <p className="text-sm font-semibold text-peach-700 mb-1">Total yang harus ditransfer:</p>
+              <p className="text-2xl font-extrabold text-peach-600">{formatRupiah(finalPrice)}</p>
+              {voucherResult && <p className="text-xs text-peach-500 mt-0.5">Sudah termasuk diskon voucher {formatRupiah(voucherResult.discount_amount)}</p>}
             </div>
-          )}
 
-          {err && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-2 text-red-600 text-sm">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5" /><p>{err}</p>
+            <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Rekening Tujuan Transfer</p>
+            <div className="space-y-3">
+              {bankAccounts.length === 0 && (
+                <p className="text-sm text-slate-soft text-center py-4">Tidak ada rekening tersedia. Hubungi admin.</p>
+              )}
+              {bankAccounts.map((acc, i) => (
+                <div key={acc.id} className="bg-white border border-cream-200 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm"
+                        style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
+                        {acc.bank_name.slice(0,2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-ink text-sm">{acc.bank_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-sm font-mono text-slate-soft">{acc.account_number}</p>
+                          <button onClick={() => copyText(acc.account_number, i)}
+                            className="text-lavender-400 hover:text-lavender-600 transition-colors">
+                            {copiedIdx === i ? <Check size={12} /> : <Copy size={12} />}
+                          </button>
+                        </div>
+                        <p className="text-xs text-slate-soft">a.n. <span className="font-medium text-ink">{acc.account_name}</span></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
 
-          <div className="flex gap-3 justify-end pt-1">
-            <button type="button" onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-soft hover:bg-cream-200 transition-colors">Batal</button>
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
-              style={{ background: "linear-gradient(135deg, #ff9fb5 0%, #c2a7ff 100%)" }}>
-              {loading ? <><Loader2 size={16} className="animate-spin" />Memproses…</> : <><CreditCard size={16} />Bayar Sekarang</>}
+            <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-3">
+              <p className="text-xs text-lavender-700">
+                💡 <strong>Setelah transfer</strong>, klik tombol di bawah untuk mengupload bukti transfer.
+                Admin akan memverifikasi dan mempublish undanganmu dalam 1×24 jam kerja.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-soft uppercase tracking-wider">Upload Bukti Transfer</p>
+              <label className="block w-full cursor-pointer">
+                <input type="file" accept="image/*,.pdf" className="hidden"
+                  onChange={e => setBuktiFile(e.target.files?.[0] ?? null)} />
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed transition-all ${
+                  buktiFile ? 'border-mint-300 bg-mint-50' : 'border-cream-300 bg-cream-50 hover:border-lavender-300'
+                }`}>
+                  <Upload size={18} className={buktiFile ? 'text-mint-500' : 'text-slate-soft'} />
+                  <span className="text-sm text-slate-soft">
+                    {buktiFile ? buktiFile.name : 'Pilih foto/PDF bukti transfer…'}
+                  </span>
+                </div>
+              </label>
+              {uploadErr && <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{uploadErr}</p>}
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={handleUpload} disabled={!buktiFile || uploadLoading}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 shadow-md"
+                style={{ background: "linear-gradient(135deg, #d9c8ff 0%, #80cfff 100%)" }}>
+                {uploadLoading ? <><Loader2 size={15} className="animate-spin" />Mengupload…</> : <><Upload size={15} />Upload Bukti Transfer</>}
+              </motion.button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: Upload Done ──────────────────────────────────────────── */}
+        {step === 'upload' && uploadDone && (
+          <div className="text-center space-y-4 py-4">
+            <div className="w-16 h-16 rounded-full bg-mint-100 flex items-center justify-center mx-auto">
+              <CheckCircle2 size={32} className="text-mint-500" />
+            </div>
+            <div>
+              <p className="font-bold text-ink text-lg">Bukti Diterima!</p>
+              <p className="text-sm text-slate-soft mt-2">
+                Terima kasih sudah transfer. Admin kami akan memverifikasi pembayaranmu
+                dan mempublish undangan dalam <strong>1×24 jam kerja</strong>.
+              </p>
+            </div>
+            <div className="bg-lavender-50 border border-lavender-200 rounded-xl p-3 text-left">
+              <p className="text-xs text-lavender-700">Order ID: <span className="font-mono font-bold">#{orderId}</span></p>
+              <p className="text-xs text-lavender-700 mt-1">Pantau status di menu <strong>Riwayat Bayar</strong>.</p>
+            </div>
+            <motion.button whileHover={{ scale: 1.02 }} onClick={() => { onSuccess(); onClose(); }}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white shadow-md"
+              style={{ background: "linear-gradient(135deg, #9af5db 0%, #14b894 100%)" }}>
+              Selesai
             </motion.button>
           </div>
-        </form>
+        )}
+
       </motion.div>
     </div>
   );
