@@ -108,6 +108,18 @@ export async function loginApi(email: string, password: string) {
   });
 }
 
+export async function googleLoginApi(credential: string) {
+  return apiFetch<{
+    code: number;
+    status: string;
+    data: { status: string; token: string };
+  }>("/auth/google", {
+    method: "POST",
+    headers: publicHeaders(),
+    body: JSON.stringify({ credential }),
+  });
+}
+
 export async function registerApi(payload: {
   username: string;
   email: string;

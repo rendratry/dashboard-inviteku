@@ -16,10 +16,11 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
-import { registerApi, verifyOtpApi, resendOtpApi, RegisteredUser } from "@/lib/api";
+import { registerApi, verifyOtpApi, resendOtpApi, googleLoginApi, RegisteredUser } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n/dictionaries";
-import { useLanguageStore } from "@/lib/store";
+import { useLanguageStore, useAuthStore } from "@/lib/store";
 import { Globe } from "lucide-react";
+import { GoogleLogin } from '@react-oauth/google';
 
 // ── Floating decoration blob ──────────────────────────────────────────────
 function FloatingBlob({ className, delay = 0 }: { className: string; delay?: number }) {
@@ -96,6 +97,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { language, toggleLanguage } = useLanguageStore();
+  const { setToken } = useAuthStore();
 
   // Step 1: registration form
   const [step, setStep] = useState<"form" | "otp" | "success">("form");
@@ -203,6 +205,25 @@ export default function RegisterPage() {
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e?.message ?? "Gagal mengirim ulang OTP.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await googleLoginApi(credentialResponse.credential!);
+      if (res.data?.token) {
+        setToken(res.data.token);
+        router.push("/dashboard");
+      } else {
+        setError("Invalid credentials from Google.");
+      }
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e?.message ?? "Google Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -405,6 +426,25 @@ export default function RegisterPage() {
                   t.auth.registerButton
                 )}
               </motion.button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-cream-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white/70 text-slate-soft">Atau</span>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError("Google Register dibatalkan atau gagal")}
+                  theme="outline"
+                  size="large"
+                  shape="pill"
+                  text="signup_with"
+                />
+              </div>
             </motion.form>
 
             {/* Login link */}

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Eye, EyeOff, AlertTriangle, Loader2, Globe } from "lucide-react";
 import { useAuthStore, useLanguageStore } from "@/lib/store";
-import { loginApi } from "@/lib/api";
+import { loginApi, googleLoginApi } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n/dictionaries";
+import { GoogleLogin } from '@react-oauth/google';
 
 function FloatingBlob({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
@@ -49,6 +50,25 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e?.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await googleLoginApi(credentialResponse.credential!);
+      if (res.data?.token) {
+        setToken(res.data.token);
+        router.push("/dashboard");
+      } else {
+        setError("Invalid credentials from Google.");
+      }
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e?.message ?? "Google Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -195,6 +215,24 @@ export default function LoginPage() {
               t.auth.loginButton
             )}
           </motion.button>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-cream-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white/70 text-slate-soft">Atau</span>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google Login dibatalkan atau gagal")}
+              theme="outline"
+              size="large"
+              shape="pill"
+            />
+          </div>
         </motion.form>
 
         <motion.p
