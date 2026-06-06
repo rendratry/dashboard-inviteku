@@ -894,8 +894,13 @@ export interface TemplatePrice {
   id: number;
   template: string;
   name_template: string;
+  price: number;
+  price_disc: number;
+  is_disc: boolean;
   effective_price: number;
   accent_color?: string;
+  is_published?: boolean;
+  is_show_on_landing?: boolean;
   thumbnail?: string;
   background?: string;
   top_right?: string;
@@ -915,10 +920,6 @@ export interface TemplatePrice {
   foto_gallery6?: string;
   description?: string;
   features?: string[];
-  price?: number;
-  price_disc?: number;
-  is_disc?: boolean;
-  is_published?: boolean;
   lat?: string;
   lang?: string;
   backsound?: string;

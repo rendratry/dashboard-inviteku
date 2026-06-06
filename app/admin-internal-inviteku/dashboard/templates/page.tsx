@@ -313,6 +313,7 @@ function TemplateFormModal({
     price_disc: template?.price_disc ?? 0,
     is_disc: template?.is_disc ?? false,
     is_published: template?.is_published ?? false,
+    is_show_on_landing: template?.is_show_on_landing ?? false,
     lat: template?.lat ?? "",
     lang: template?.lang ?? "",
   });
@@ -339,6 +340,7 @@ function TemplateFormModal({
       fd.append("price_disc", String(formData.price_disc));
       fd.append("is_disc", String(formData.is_disc));
       fd.append("is_published", String(formData.is_published));
+      fd.append("is_show_on_landing", String(formData.is_show_on_landing));
       fd.append("lat", formData.lat);
       fd.append("lang", formData.lang);
       
@@ -421,6 +423,11 @@ function TemplateFormModal({
                   <input type="checkbox" checked={formData.is_published} onChange={e => setFormData({ ...formData, is_published: e.target.checked })}
                     className="w-4 h-4 rounded border-cream-300 text-blush-500 focus:ring-blush-400" />
                   Publish Template (Bisa Dipakai User)
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-ink-muted cursor-pointer select-none">
+                  <input type="checkbox" checked={formData.is_show_on_landing} onChange={e => setFormData({ ...formData, is_show_on_landing: e.target.checked })}
+                    className="w-4 h-4 rounded border-cream-300 text-blush-500 focus:ring-blush-400" />
+                  Show on Landing Page (Tampil di inviteku)
                 </label>
               </div>
             </div>
